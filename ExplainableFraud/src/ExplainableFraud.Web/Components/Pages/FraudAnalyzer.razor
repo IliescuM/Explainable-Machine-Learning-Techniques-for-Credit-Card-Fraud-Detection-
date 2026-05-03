@@ -1,0 +1,109 @@
+@page "/fraud"
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<PageTitle>Fraud score</PageTitle>
+
+<h1>Fraud score (demo)</h1>
+<p class="text-muted">
+    Server calls <code>@Http.BaseAddress</code> (<code>ApiBaseUrl</code> — in Development this is HTTP so local SSL trust is not required).
+    Run <strong>ExplainableFraud.Api</strong> first. Swagger UI: <code>http://localhost:5039/swagger</code> or <code>https://localhost:7088/swagger</code>.
+</p>
+
+<EditForm Model="_form" OnValidSubmit="SubmitAsync" FormName="fraudScore">
+    <div class="mb-3">
+        <label class="form-label" for="amount">Amount</label>
+        <InputNumber class="form-control" id="amount" @bind-Value="_form.Amount" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="time">Time (seconds since reference)</label>
+        <InputNumber class="form-control" id="time" @bind-Value="_form.Time" />
+    </div>
+    <button type="submit" class="btn btn-primary" disabled="@_busy">Score</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger mt-3" role="alert">@_error</div>
+}
+
+@if (_result is not null)
+{
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2 class="h5">Result</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Fraud probability</dt>
+                <dd class="col-sm-8">@_result.FraudProbability.ToString("P2")</dd>
+                <dt class="col-sm-4">Threshold</dt>
+                <dd class="col-sm-8">@_result.DecisionThreshold.ToString("P2")</dd>
+                <dt class="col-sm-4">Likely fraud</dt>
+                <dd class="col-sm-8">@(_result.IsFraudLikely ? "Yes" : "No")</dd>
+                <dt class="col-sm-4">Model</dt>
+                <dd class="col-sm-8"><code>@_result.ModelVersion</code></dd>
+            </dl>
+        </div>
+    </div>
+
+    <h3 class="h6 mt-4">Feature contributions (normalized)</h3>
+    <table class="table table-sm">
+        <thead>
+            <tr><th>Feature</th><th class="text-end">Contribution</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in _result.FeatureContributions)
+            {
+                <tr>
+                    <td>@c.FeatureName</td>
+                    <td class="text-end">@c.Contribution.ToString("N3")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private readonly ScoreForm _form = new();
+    private FraudScoreResponse? _result;
+    private string? _error;
+    private bool _busy;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        _result = null;
+        try
+        {
+            var request = new FraudScoreRequest
+            {
+                Amount = _form.Amount,
+                Time = _form.Time
+            };
+
+            var response = await Http.PostAsJsonAsync("api/fraud/score", request).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                _error = $"API {(int)response.StatusCode}: {body}";
+                return;
+            }
+
+            _result = await response.Content.ReadFromJsonAsync<FraudScoreResponse>().ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class ScoreForm
+    {
+        public float Amount { get; set; } = 100f;
+        public float Time { get; set; } = 36_000f;
+    }
+}
