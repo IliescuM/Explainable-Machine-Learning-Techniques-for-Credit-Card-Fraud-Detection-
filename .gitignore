@@ -11,6 +11,9 @@
 **/TestResults/
 **/packages.lock.json
 
+# LaTeX — compiled output (regenerate with your toolchain)
+/main.pdf
+
 # LaTeX build artifacts
 *.aux
 *.bbl

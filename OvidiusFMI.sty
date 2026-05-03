@@ -1,0 +1,402 @@
+
+%==========================================================================
+%======== Identification ==================================================
+%==========================================================================
+
+\ProvidesPackage{OvidiusFMI}
+
+\RequirePackage{ifthen}
+\RequirePackage{varioref}
+\RequirePackage{makeidx}
+\RequirePackage{multicol}
+\RequirePackage{epsfig}
+\RequirePackage{pifont}
+\RequirePackage{rotating}
+\RequirePackage{graphicx}
+\RequirePackage{etoolbox}
+
+\renewcommand\contentsname{Cuprins}
+\renewcommand\listfigurename{Lista Figurilor}
+\renewcommand\listtablename{Lista Tabelelor}
+\renewcommand\bibname{Referin\c te bibliografice}
+\renewcommand\indexname{Index}
+\renewcommand\figurename{Figura}
+\renewcommand\tablename{Tabelul}
+\renewcommand\partname{Partea}
+\renewcommand\chaptername{Capitolul}
+\renewcommand\appendixname{Anexe}
+\renewcommand\abstractname{Rezumat}
+\renewcommand\today{\number\day\space
+                    \ifcase\month\or Ianuarie\or Februarie\or Martie\or
+                                     Aprilie\or Mai\or Iunie\or
+                                     Iulie\or August\or Septembrie\or
+                                     Octombrie\or Noiembrie\or Decembrie\fi
+                    \space\number\year}
+                    
+%---------------- Setari pagina ----------------
+\setlength{\hoffset}{-1in}
+\setlength{\voffset}{-1in}
+\setlength{\oddsidemargin}{3.0cm}   % marges interieure
+\setlength{\evensidemargin}{2.5cm}  % marges exterieure
+\setlength{\topmargin}{1.5cm}       % marge superieure de 2.0 cm
+\setlength{\headheight}{0.5cm}
+\setlength{\headsep}{1.0cm}
+\setlength{\footskip}{\headheight}  % marge inferieure
+\addtolength{\footskip}{\headsep}
+\setlength{\marginparwidth}{2.5cm}  % marge utilisable
+\setlength{\marginparsep}{1mm}
+\reversemarginpar                   % marge utilisable a l'interieur
+
+\setlength{\paperwidth}{21cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{\paperheight}
+\addtolength{\textheight}{-2\topmargin}
+\addtolength{\textheight}{-2\footskip}
+\setlength{\textwidth}{\paperwidth}
+\addtolength{\textwidth}{-\oddsidemargin}
+\addtolength{\textwidth}{-\evensidemargin}
+
+%---------------- Entetes / Pieds de page ----------------
+\newcommand{\markstyle}[1]{\textsf{\textsl{#1}}}
+\newcommand{\persomark}{\ }
+\newcommand{\titlemark}{\ }
+\newcommand{\leftortitlemark}
+           {\ifthenelse{\equal{\leftmark}{}}
+                       {\markstyle{\titlemark}}
+                       {\markstyle{\leftmark}}}
+\newcommand{\rightorleftmark}
+           {\ifthenelse{\equal{\rightmark}{{}{}}}
+                       {\leftortitlemark}
+                       {\ifthenelse{\equal{\rightmark}{}}
+                                   {\leftortitlemark}
+                                   {\markstyle{\rightmark}}}}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\newcommand{\leftCorner}{\mbox{}}
+\newcommand{\showLeftCorner}{\rlap{\kern 1mm%
+                             \begin{picture}(0,0)(0,0)%
+                             \put(0,0){\leftCorner}%
+                             \end{picture}}}
+\if@twoside
+  \newcommand{\ps@PageNormale}{%
+    \renewcommand{\@oddhead}{%
+      \shortstack{\hfill\ \rightorleftmark\\%
+                  \rule{\textwidth}{0.4pt}}}%
+    \renewcommand{\@evenhead}{%
+      \shortstack{\leftortitlemark\hfill\ \\%
+                  \rule{\textwidth}{0.4pt}}}%
+    \renewcommand{\@oddfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\persomark\hfill\thepage}}%
+      \showLeftCorner}%
+    \renewcommand{\@evenfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\thepage\hfill\persomark}}}}
+  \newcommand{\ps@PageSpeciale}{%
+    \renewcommand{\@oddhead}{}%
+    \renewcommand{\@evenhead}{}%
+    \renewcommand{\@oddfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\persomark\hfill\thepage}}%
+      \showLeftCorner}%
+    \renewcommand{\@evenfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\thepage\hfill\persomark}}}}
+\else
+  \newcommand{\ps@PageNormale}{%
+    \renewcommand{\@oddhead}{%
+      \shortstack{\leftortitlemark\hfill\ \rightorleftmark\\%
+                  \rule{\textwidth}{0.4pt}}}%
+    \renewcommand{\@oddfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\persomark\hfill\thepage}}%
+       \showLeftCorner}%
+    \renewcommand{\@evenhead}{}%
+    \renewcommand{\@evenfoot}{}}
+  \newcommand{\ps@PageSpeciale}{%
+    \renewcommand{\@oddhead}{}%
+    \renewcommand{\@oddfoot}{%
+      \shortstack{\rule{\textwidth}{0.4pt}\\%
+                  \markstyle{\persomark\hfill\thepage}}%
+      \showLeftCorner}%
+    \renewcommand{\@evenhead}{}%
+    \renewcommand{\@evenfoot}{}}
+\fi
+
+%---------------- Titres ----------------
+\renewcommand\chapter{%
+  \cleardoublepage\pagestyle{PageNormale}%
+  \cleardoublepage\thispagestyle{PageSpeciale}%
+  \secdef\chapitre\schapitre}
+\newcommand{\chapitre}[2][?]{%
+  \refstepcounter{chapter}%
+  \addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}#1}%
+  \addtocontents{lof}{\protect\addvspace{10pt}}%
+  \addtocontents{lot}{\protect\addvspace{10pt}}%
+  \chaptermark{#1}%
+  {\setlength{\parindent}{0pt}\raggedleft%
+   {\sffamily\bfseries\Huge%
+   \setlength{\baselineskip}{0pt}%
+   \setlength{\parskip}{0pt}%
+   \shortstack{\rule{\linewidth}{1pt}\\%
+               \rule{\linewidth}{0.4pt}}\vskip 20pt%
+   \mbox{\@chapapp\space\thechapter\rule[-6pt]{0pt}{30pt}}\vskip 20pt%
+   \shortstack{\rule{\linewidth}{0.4pt}\\%
+               \rule{\linewidth}{1pt}}\vskip 20pt%
+   #1\rule[-6pt]{0pt}{30pt}\vskip 70pt}}%
+   \@afterindentfalse\@afterheading}
+\newcommand{\schapitre}[1]{%
+  \addcontentsline{toc}{chapter}{#1}%
+  \addtocontents{lof}{\protect\addvspace{10pt}}%
+  \addtocontents{lot}{\protect\addvspace{10pt}}%
+  \chaptermark{#1}%
+  {\setlength{\parindent}{0pt}\raggedleft%
+   {\sffamily\bfseries\Huge%
+   \setlength{\baselineskip}{0pt}%
+   \setlength{\parskip}{0pt}%
+   \shortstack{\rule{\linewidth}{1pt}\\%
+               \rule{\linewidth}{0.4pt}}\vskip 20pt%
+   \mbox{#1\rule[-6pt]{0pt}{30pt}}\vskip 20pt%
+   \shortstack{\rule{\linewidth}{0.4pt}\\%
+               \rule{\linewidth}{1pt}}\vskip 120pt}}%
+   \@afterindentfalse\@afterheading}
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                     {-5mm}% -5mm
+                                     {5mm}% 5mm
+                                     {\LARGE\bfseries}}
+\renewcommand\subsection{\@startsection {subsection}{2}{\z@}%
+                                        {-5mm}%
+                                        {5mm}%
+                                        {\Large\bfseries}}
+\renewcommand\subsubsection{\@startsection {subsubsection}{3}{\z@}%
+                                           {-5mm}%
+                                           {2.5mm}%
+                                           {\large\bfseries}}
+\renewcommand\paragraph{\@startsection {paragraph}{4}{\z@}%
+                                       {-5mm}%
+                                       {2.5mm}%
+                                       {\normalsize\slshape\bfseries}}
+\renewcommand\subparagraph{\@startsection {subparagraph}{5}{\z@}%
+                                          {-5mm}%
+                                          {1mm}%
+                                          {\normalsize\itshape\bfseries}}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+%---------------- Listes ----------------
+\renewcommand{\labelitemi}{\textbf{$\triangleright$}}
+\renewcommand{\labelitemii}{\textbf{$\diamond$}}
+\renewcommand{\labelitemiii}{\textbf{$\circ$}}
+\renewcommand{\labelitemiv}{\textbf{$\cdot$}}
+ 
+\renewcommand{\theenumi}{\arabic{enumi}}
+  \renewcommand{\labelenumi}{\textbf{\theenumi.}}
+\renewcommand{\theenumii}{\alph{enumii}}
+  \renewcommand{\labelenumii}{\textbf{(\theenumii)}}
+\renewcommand{\theenumiii}{\roman{enumiii}}
+  \renewcommand{\labelenumiii}{\textbf{\theenumiii.}}
+\renewcommand{\theenumiv}{\alph{enumiv}}
+  \renewcommand{\labelenumiv}{\textbf{\itshape\theenumiv.}}
+ 
+\newcommand{\listspaces}{\setlength{\topsep}{-0.75\parskip}
+                         \setlength{\partopsep}{0.5\parskip}
+                         \setlength{\parsep}{0pt}
+                         \setlength{\itemsep}{1pt}}
+\def\itemstart{\samepage}
+\def\item{%
+  \itemstart\@inmatherr\item
+  \@ifnextchar [\@item{\@noitemargtrue \@item[\@itemlabel]}}
+\def\enumerate{%
+  \ifnum \@enumdepth >\thr@@\@toodeep\else
+    \advance\@enumdepth\@ne
+    \edef\@enumctr{enum\romannumeral\the\@enumdepth}%
+      \expandafter
+      \list
+        {\csname label\@enumctr\endcsname}
+        {\listspaces\usecounter\@enumctr\def\makelabel##1{\hss\llap{##1}}}%
+  \fi}
+\def\itemize{%
+  \ifnum \@itemdepth >\thr@@\@toodeep\else
+    \advance\@itemdepth\@ne
+    \edef\@itemitem{labelitem\romannumeral\the\@itemdepth}%
+    \expandafter
+    \list
+      \csname\@itemitem\endcsname
+      {\listspaces\def\makelabel##1{\hss\llap{##1}}}%
+  \fi}
+\renewenvironment{description}
+                 {\list{}{\listspaces\labelwidth\z@ \itemindent-\leftmargin
+                          \let\makelabel\descriptionlabel}}
+                 {\endlist}
+\def\bibliography#1{%
+  \def\itemstart{}
+  \if@filesw
+    \immediate\write\@auxout{\string\bibdata{#1}}%
+  \fi
+  \@input@{\jobname.bbl}}
+
+%---------------- Prima pagina ----------------
+\newcommand*{\facultatea}[1]{\gdef\@facultatea{#1}}
+\newcommand*{\specializarea}[1]{\gdef\@specializarea{#1}}
+\newcommand*{\titlu}[1]{\gdef\@titlu{#1}}
+\newcommand*{\teza}[1]{\gdef\@teza{#1}}
+\newcommand*{\gradDidacticCP}[1]{\gdef\@gradDidacticCP{#1}}
+\newcommand*{\gradDidacticCS}[1]{\gdef\@gradDidacticCS{#1}}
+\newcommand*{\coordonatorPrincipal}[1]{\gdef\@coordonatorPrincipal{#1}}
+\newcommand*{\coordonatorSecundar}[1]{\gdef\@coordonatorSecundar{#1}}
+\newcommand*{\autor}[1]{\gdef\@autor{#1}}
+
+\newcommand*{\data}[1]{\gdef\@data{#1}}
+
+\renewcommand{\maketitle}{%
+  \newpage
+  \begin{minipage}{0.48\textwidth} \begin{flushleft}
+\includegraphics[width=0.4\textwidth]{sigla.png}
+\end{flushleft}\end{minipage}
+\begin{minipage}{0.22\textwidth}
+  \centerline{\large Ministerul Educa\c tiei }
+  \centerline{\large Universitatea "OVIDIUS" Constan\c ta}
+  \centerline{\large Facultatea de \@facultatea}
+  \centerline{\large Specializarea \@specializarea}
+\end{minipage}
+
+    \thispagestyle{empty}
+  \vspace*{\stretch{2}}
+  \noindent\begin{minipage}{\textwidth}
+      \center{\Huge \@titlu}%\centerline
+    \vskip 4mm
+    {\Large \centerline{Lucrare de \@teza}}\vskip 2mm
+  \vspace{2cm}
+  \leftline{\large \ifdef{\@coordonatorSecundar}{Coordonatori \c stiin\c tifici:}{Coordonator \c stiin\c tific:}}\vskip 2mm
+  \leftline{\Large \ifdef{\@gradDidacticCP}{\@gradDidacticCP}{}~\@coordonatorPrincipal}\vskip 2mm
+  \leftline{\Large \ifdef{\@gradDidacticCS}{\@gradDidacticCS}{}~\ifdef{\@coordonatorSecundar}{\@coordonatorSecundar}{}}
+  \vspace{2cm}
+  \rightline{\large Absolvent:}\vskip 2mm
+  \rightline{\Large \@autor}
+  \end{minipage}
+  \vspace*{\stretch{3}}
+  \par\centerline{\normalsize ~Constan\c ta~}
+  \par\centerline{\normalsize ~\@data~}
+  \newpage\pagestyle{PageNormale}
+  }
+
+%---------------- Paragraphes ----------------
+\setlength{\parskip}{0.75\normalbaselineskip plus 0.5mm minus 0.5mm}
+\setlength{\parindent}{2em}
+
+%---------------- Notes de bas de page ----------------
+\renewcommand{\@makefntext}[1]
+             {\setlength{\parindent}{0pt}%
+              \begin{list}{}{\setlength{\labelwidth}{2em}%
+                 \setlength{\leftmargin}{\labelwidth}%
+                 \setlength{\labelsep}{1mm}%
+                 \setlength{\itemsep}{0pt}%
+                 \setlength{\parsep}{0pt}%
+                 \setlength{\topsep}{0pt}%
+                 \footnotesize}%
+              \item[\hfill\@makefnmark]#1%
+              \end{list}}
+\renewcommand{\footnoterule}
+             {\vspace*{-1mm}\noindent%
+              \makebox[0pt][l]{\rule{0.4\columnwidth}{0.7pt}}%
+              \hspace*{1mm}%
+              \makebox[0pt][l]{\rule[-0.75mm]{0.4\columnwidth}{0.3pt}}%
+              \vspace*{1mm}}
+\def\@greeksymbol#1%
+    {\ensuremath{\ifcase#1%
+                 \or \alpha   \or \beta       \or \gamma
+                 \or \delta   \or \varepsilon \or \zeta
+                 \or \eta     \or \vartheta   \or \iota
+                 \or \kappa   \or \lambda     \or \mu
+                 \or \nu      \or \xi         \or \varpi
+                 \or \varrho  \or \varsigma   \or \tau
+                 \or \upsilon \or \varphi     \or \chi
+                 \or \psy     \or \omega      \or \Gamma
+                 \or \Delta   \or \Theta      \or \Lambda
+                 \or \Xi      \or \Pi         \or \Sigma
+                 \or \Upsilon \or \Phi        \or \Psi
+                 \or \Omega   \else \@ctrerr\fi}}
+\def\greeksymbol#1{\expandafter\@greeksymbol\csname c@#1\endcsname}
+
+%\renewcommand{\thefootnote}%
+%             {\rlap{\hspace*{2.5pt}\begingroup\scriptsize%
+%                    \greeksymbol{footnote}\endgroup}%
+%              \begingroup\footnotesize\ensuremath{\bigcirc}\endgroup}
+ 
+%---------------- Une boite pour le code ----------------
+\newlength{\verboxsize}
+\ifthenelse{\equal{\@ptsize}{0}}
+           {\setlength{\verboxsize}{10.5cm}}
+           {\setlength{\verboxsize}{12cm}}
+\newenvironment{verbox}
+               {\begin{center}\begin{tabular}{|c|}\hline \\
+                \begin{minipage}{\verboxsize}%
+                \setlength{\baselineskip}{8pt}
+                \scriptsize\vspace*{-\baselineskip}}
+               {\vspace*{-\baselineskip}\end{minipage} \\
+                \hline\end{tabular}\end{center}}
+
+%---------------- Titre des figures ----------------
+\newlength{\captionsize}
+\setlength{\captionsize}{\verboxsize}
+\addtolength{\captionsize}{2\tabcolsep}
+\newcommand{\captioncolon}{:}
+\newcommand{\fakecaption}[1]{%
+            \centerline{\rule{\textwidth}{0.1pt}}%
+            \vspace*{-10pt}%
+		\center{\small#1}\\
+		\vspace*{-5pt}%
+            \centerline{\rule{\textwidth}{0.1pt}}
+            \vspace*{-5pt}
+}
+\renewcommand{\@makecaption}[2]{\fakecaption{\textsl{#1}\captioncolon\ #2}}
+
+%---------------- Commandes Utilitaires ----------------
+%\newcommand{\up}[1]{$^{\rm #1}$}
+%\newcommand{\down}[1]{$_{\rm #1}$}
+%\newcommand{\smartdotfill}{\leaders\hbox to 2mm{\hfil.\hfil}\hfill}
+%\newcommand{\centerfig}[1]{\centerline{\epsfig{file=#1,width=\captionsize}}}
+
+%---------------- Notes dans la marge ----------------
+%\newlength{\marginnotewidth}
+%\setlength{\marginnotewidth}{\marginparwidth}
+%\addtolength{\marginnotewidth}{-2\fboxsep}
+%\addtolength{\marginnotewidth}{-2\fboxrule}
+%\newcommand{\marginnote}[1]
+%  {\marginpar{\scriptsize\framebox{\parbox{\marginnotewidth}
+%                                          {\raggedright #1}}}}
+
+%---------------- Une main dans la marge ----------------
+%\newcommand{\marginleftpen}
+%           {\marginpar{\Huge\hfill\ding{46}}}
+%\newcommand{\marginrightpen}
+%           {\marginpar{\Huge\begin{turn}{180}\ding{48}\end{turn}\hfill}}
+%\newcommand{\marginpen}
+%  {\ifthenelse{\boolean{@twoside} \and \not \isodd{\value{page}}}
+%              {\marginrightpen}{\marginleftpen}}
+
+%---------------- Presentation de la liste des figures ----------------
+\renewcommand{\l@figure}{\@dottedtocline{1}{0pt}{2.3em}}
+
+%---------------- commande SetFigFont{}{} pour xfig ----------------
+%\begingroup\makeatletter\ifx\SetFigFont\undefined
+%\def\x#1#2#3#4#5#6#7\relax{\def\x{#1#2#3#4#5#6}}%
+%\expandafter\x\fmtname xxxxxx\relax \def\y{splain}%
+%\ifx\x\y   % LaTeX or SliTeX?
+%\gdef\SetFigFont#1#2#3{%
+%  \ifnum #1<17\tiny\else \ifnum #1<20\small\else
+%  \ifnum #1<24\normalsize\else \ifnum #1<29\large\else
+%  \ifnum #1<34\Large\else \ifnum #1<41\LARGE\else
+%     \huge\fi\fi\fi\fi\fi\fi
+%  \csname #3\endcsname}%
+%\else
+%\gdef\SetFigFont#1#2#3{\begingroup
+%  \count@#1\relax \ifnum 25<\count@\count@25\fi
+%  \def\x{\endgroup\@setsize\SetFigFont{#2pt}}%
+%  \expandafter\x
+%    \csname \romannumeral\the\count@ pt\expandafter\endcsname
+%    \csname @\romannumeral\the\count@ pt\endcsname
+%  \csname #3\endcsname}%
+%\fi
+%\fi\endgroup
+

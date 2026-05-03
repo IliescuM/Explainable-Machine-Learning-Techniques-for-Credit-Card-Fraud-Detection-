@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ExplainableFraud.Api/ExplainableFraud.Api.csproj" />
+    <Project Path="src/ExplainableFraud.Application/ExplainableFraud.Application.csproj" />
+    <Project Path="src/ExplainableFraud.Contracts/ExplainableFraud.Contracts.csproj" />
+    <Project Path="src/ExplainableFraud.Domain/ExplainableFraud.Domain.csproj" />
+    <Project Path="src/ExplainableFraud.Infrastructure/ExplainableFraud.Infrastructure.csproj" />
+    <Project Path="src/ExplainableFraud.Web/ExplainableFraud.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ExplainableFraud.UnitTests/ExplainableFraud.UnitTests.csproj" />
+  </Folder>
+</Solution>
