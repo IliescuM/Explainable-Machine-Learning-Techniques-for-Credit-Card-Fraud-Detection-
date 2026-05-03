@@ -1,50 +1,18 @@
-\chapter{Application Presentation}
+\chapter{Empirical Investigation and Critical Discussion}
 
-\section{Implementation Scope and Chapter Goals}
-This chapter presents the practical implementation of the proposed architecture, focusing on how the conceptual components described previously are realized in a deployable software system. The implementation is organized around three goals: reliable fraud scoring, interpretable outputs for analysts, and operational traceability for governance and audit requirements.
+\section{Goals and Epistemological Framing}
+Whereas methodological substance was formalised algebraically in Chapter~3, this chapter investigates how empirical quantities instantiate those abstractions without elevating ancillary software engineering to coequal scholarly status \cite{fraud_handbook,xai_survey}. The aims are therefore threefold:
+\begin{enumerate}
+    \item demonstrate reproducible pipelines mapping anonymised transactional predictors $\bigl(\mathrm{time}, \{v_{\ell}\}_{\ell=1}^{28},\mathrm{amount}\bigr)$ to probabilistic forecasts $\hat{y}$ under extreme imbalance;
+    \item relate scalar evaluation summaries (ROC, PR, $F_1$, threshold sensitivities) to the asymmetric cost motifs discussed theoretically;
+    \item interpret explanation vectors $e(x)$ critically, highlighting limitations inherited from perturbation neighbourhoods or correlation proxies.
+\end{enumerate}
+Observed numerical outcomes should be interpreted as \emph{cases} illuminating theoretical claims rather than exhaustive industrial certification.
 
-The application follows a layered design that separates machine learning operations, business services, and user interaction logic. This structure supports maintainability, controlled testing, and progressive extension of system capabilities without requiring disruptive refactoring.
+\section{Dataset Schema and Confidentiality Constraints}
+Public fraud corpora routinely publish anonymised PCA coordinates instead of semantic entity descriptors \cite{credit_card_dataset,fraud_handbook}; consequently variables $v_\ell$ lack direct lexical mapping to merchants or cardholders, yet statistical dependence structures remain scientifically informative.
 
-\section{Technology Stack and Project Structure}
-The solution is implemented using .NET 10, ASP.NET Core Web API, Blazor, and ML.NET. This stack enables the model lifecycle, inference pipeline, and analyst dashboard to remain within a single engineering ecosystem, reducing integration overhead and minimizing cross-language deployment complexity \cite{dotnet_docs,blazor_docs,mldotnet_docs}.
-
-At the codebase level, the project can be organized into distinct modules: data contracts, feature pipeline, model training, inference service, explainability service, API layer, and presentation layer. This modularization ensures that model updates, feature schema changes, and front-end refinements can be handled with controlled impact across the system.
-
-\section{Backend Services and Inference Flow}
-The backend exposes REST endpoints for transaction scoring and explanation retrieval. A typical request flow begins when the client submits transaction attributes to the API. The service validates the payload, applies the same preprocessing transformations used during training, executes model inference, computes explanation artifacts, and returns a structured response containing score, decision support metadata, and explanation details.
-
-To preserve consistency between training and serving, transformation steps are versioned and reused as serialized artifacts alongside the trained model. This approach reduces the risk of training-serving skew, where mismatched preprocessing logic can degrade production performance despite strong offline metrics.
-
-Each prediction response includes a model version identifier and a processing timestamp. These fields are essential for reproducibility and for analyzing behavior differences when multiple model iterations are tested over time.
-
-\section{Model Training Pipeline in ML.NET}
-Model training is implemented as a repeatable pipeline that ingests labeled transaction data, applies feature transformations, and fits a binary classification model suitable for imbalanced tabular data \cite{fraud_handbook,mldotnet_docs}.
-
-The training workflow includes data split management, feature set declaration, hyperparameter configuration, and evaluation generation. Results are persisted together with metadata describing dataset period, schema version, and configuration settings. This metadata enables controlled comparison across experiments and supports robust reporting in the evaluation chapter.
-
-From a software engineering perspective, training is executed as an explicit workflow step rather than an implicit side effect of application startup. This separation allows model retraining schedules, approval gates, and rollback processes to be managed under clear operational policies.
-
-\section{Explainability Service Integration}
-The explainability service is invoked after model inference and computes local feature attributions for each scored transaction. The returned explanation object is normalized into a human-readable structure that can be rendered consistently in the analyst interface, regardless of the underlying attribution mechanism.
-
-For operational usability, the service returns ranked positive and negative contributors, together with compact textual descriptors suitable for case notes. The objective is not to replace analyst judgment but to provide transparent evidence that accelerates triage and improves confidence in automated recommendations.
-
-The implementation also records explanation metadata in the audit log so that historical decisions remain interpretable even after model updates, subject to model artifact retention policies.
-
-\section{Blazor Front-End and Analyst Workflow}
-The Blazor user interface is designed around real fraud analyst activities: queue prioritization, case inspection, explanation review, and action logging. The main dashboard presents a ranked list of suspicious transactions and supports filtering by operationally relevant criteria such as amount intervals, merchant segments, and processing time windows.
-
-When an analyst opens a case, the interface combines transaction details, model score, and ranked feature contributions in a single view. This integrated presentation reduces cognitive overhead and avoids context switching between disconnected tools. User actions are explicitly captured and persisted to enable workflow analytics and future supervised feedback loops.
-
-\section{Security, Logging, and Operational Controls}
-Because the application processes sensitive financial data, the implementation includes role-based access control, secure API communication, and logging policies that limit the exposure of personally identifiable information. Sensitive fields are masked in logs and selectively displayed in the interface based on authorization policies.
-
-Operational controls include model version tracking, request correlation identifiers, and immutable event logging for prediction and analyst actions. These controls provide a traceable chain of evidence for internal quality reviews and external compliance processes.
-
-\section{Deployment Perspective}
-The application is deployment-ready for staged environments (development, validation, and production) through externalized configuration and environment-specific secrets handling. Model paths, threshold values, and service endpoints are configurable without code changes, enabling controlled release management.
-
-This deployment strategy supports progressive rollout of model versions and facilitates rollback when monitoring indicates performance degradation or unexpected behavior.
+Experiments emulate canonical ULB preprocessing: raw CSV rows represent independent transactions labelled by latent fraud adjudication protocols. Temporal stratification assumptions should be audited before claiming deployment readiness; leakage across sliding windows materially inflates retrospective metrics absent careful bookkeeping.
 
 \section{Experimental Setup and Evaluation Protocol}
 To ensure that model performance claims are reproducible and academically defensible, the evaluation process follows a fixed protocol. The dataset is partitioned into training, validation, and test subsets using temporal constraints where possible, in order to avoid information leakage from future transactions into historical training data. All preprocessing steps applied during training are serialized and reused during inference.
@@ -54,18 +22,18 @@ Given the imbalanced nature of fraud detection, model quality is assessed using 
 The baseline comparison includes at least one simple model (for example, logistic regression) and one strong non-linear model (for example, gradient boosting). This comparative design supports a credible argument that final model selection is driven by evidence rather than by implementation convenience.
 
 \section{Evaluation Metrics}
-Let $TP$, $FP$, $TN$, and $FN$ denote true positives, false positives, true negatives, and false negatives, respectively. The main evaluation metrics are defined as:
+Let $TP$, $FP$, $TN$, and $FN$ denote true positives, false positives, true negatives, and false negatives, respectively. Canonical definitions follow:
 \begin{equation}
-\text{Precision} = \frac{TP}{TP + FP}
+\text{Precision} = \frac{TP}{TP + FP},\qquad \text{Recall} = \frac{TP}{TP + FN},\qquad
+F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} .
 \end{equation}
+ROC-AUC measures ranking quality across negatives and positives irrespective of prevalence; denote it $\mathrm{AUC}_{\mathrm{ROC}}$.
 \begin{equation}
-\text{Recall} = \frac{TP}{TP + FN}
+\mathrm{AUC}_{\mathrm{ROC}} = \int_0^1 \text{TPR}(\alpha)\, \mathrm{d}(\text{FPR}(\alpha)) .
 \end{equation}
-\begin{equation}
-F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
-\end{equation}
+Average precision aggregates precision--recall operating points analogous to discrete summation formulae articulated in Chapter~2. Together they stress complementary geometry: ROC emphasises discriminative ordering whereas PR reacts sharply to imbalance-induced false-positive inflation \cite{fraud_handbook}.
 
-Precision indicates the quality of positive fraud alerts, while recall indicates how many fraudulent events are successfully captured. Because missed fraud cases can have significant financial consequences, recall is treated as a strategic metric; however, precision must remain sufficiently high to keep manual investigation volume manageable.
+Precision encodes investigative purity; recall expresses fraud containment. Institutional utility demands joint satisfaction under budgeted alert volume; thus threshold sweeps annotate metric surfaces referenced below.
 
 \section{Result Reporting Template}
 The final dissertation should report results in a compact, reproducible format. Table~\ref{tab:model-comparison} provides the structure used to summarize model performance.
@@ -91,7 +59,7 @@ Selected Final Model & to be reported & to be reported & to be reported & to be 
 In addition to aggregate metrics, transaction-level explanation case studies should be included. For each representative case, the report should provide: the predicted probability, top positive contributors, top negative contributors, and the analyst decision taken after reviewing the explanation. This presentation links model behavior to actual operational reasoning.
 
 \section{Results and Discussion}
-This section interprets the empirical outcomes in relation to the thesis objective: combining strong fraud detection performance with actionable explainability in a production-oriented .NET environment. The quantitative narrative should be completed only with measured values obtained from the final experiments.
+This section interprets empirical outcomes relative to methodological objectives linking predictive separation, asymmetric costs, and defensible explanatory narratives. The quantitative narrative should be completed only with measured values obtained from the final experiments.
 
 \subsection{Predictive Performance Interpretation}
 Using Table~\ref{tab:model-comparison}, the first discussion point should compare the baseline model against the selected final model. If the final model improves recall while maintaining acceptable precision, this indicates better fraud capture without an unmanageable increase in false alerts. If precision improves at similar recall levels, the model is likely reducing analyst workload while preserving detection coverage.
@@ -143,30 +111,10 @@ Results should also be interpreted from a governance perspective. The combinatio
 The discussion must acknowledge that results are conditional on the available dataset, labeling quality, and observation period. If the dataset is geographically or temporally narrow, external validity is limited. If fraud patterns shift, periodic retraining and threshold recalibration become mandatory. Presenting these limitations strengthens academic credibility.
 
 \section{Threats to Validity}
-Three validity risks are explicitly considered. First, data shift over time may reduce model performance after deployment if fraud patterns evolve. Second, local explanation quality can vary across model families and should not be interpreted as causal proof. Third, operational effectiveness depends not only on model metrics but also on user interface quality and analyst workflow adoption.
+Three validity tensions persist. Temporal covariate shift erodes calibrated probabilities absent monitoring. Explanation artefacts summarise model sensitivity, yet remain non-causal and potentially unstable across neighbours in $\mathcal{X}$ \cite{xai_survey}. Human factors---investigator trust curves, escalation protocol elasticity---moderate uptake independent of ROC geometry.
 
-Addressing these risks requires periodic retraining, monitoring of metric drift, and controlled user feedback loops integrated into the application lifecycle.
-
-\section{Concrete Software Deliverable (Implemented Artefacts)}
-This section records what was actually built for the dissertation repository, so that claims in the preceding sections can be traced to precise modules. The implementation intentionally mixes a production-oriented core (training, inference, API contracts) with a focused analyst-facing MVP (single-transaction scoring) and supplementary visualization pages aimed at thesis presentation.
-
-\subsection{Repository layout and modules}
-The solution is organised into layered projects: \texttt{ExplainableFraud.Domain} (transaction feature types), \texttt{ExplainableFraud.Contracts} (REST DTOs shared by API and Blazor client), \texttt{ExplainableFraud.Application} (mapping and service abstractions), \texttt{ExplainableFraud.Infrastructure} (ML.NET loading, heuristic baseline, dependency injection wiring), \texttt{ExplainableFraud.Api} (ASP.NET Core controllers and configuration), \texttt{ExplainableFraud.Web} (Blazor Server UI), \texttt{ExplainableFraud.Training} (offline training console), and \texttt{ExplainableFraud.UnitTests} (automated checks). This separation keeps training jobs outside the API process and allows the API to swap scoring backends without changing controller contracts.
-
-\subsection{Dataset compatibility and feature schema}
-Training and inference assume the widely used ULB credit-card fraud CSV layout: scalar \emph{Time}, anonymised PCA dimensions \emph{V1}--\emph{V28}, scalar \emph{Amount}, and binary \emph{Class}. The API accepts \texttt{Amount}, \texttt{Time}, and an optional array of 28 principal-component values; omitted components default to zero. This matches the public Kaggle distribution and keeps the feature vector aligned between offline training and online scoring.
-
-\subsection{Offline training workflow (\texttt{ExplainableFraud.Training})}
-Model training is executed as a standalone console application rather than at API startup. The trainer loads rows from a user-supplied CSV path, shuffles data, performs an 80/20 train--test split, fits an ML.NET \texttt{FastTree} binary classifier with \emph{unbalanced-sets} handling suitable for extreme class imbalance, evaluates ROC AUC and $F_1$ on the hold-out split, and writes two artefacts: a serialized model (\texttt{fraud-model.zip}) and a JSON sidecar (\texttt{fraud-model-metadata.json}). The metadata stores the published model label, validation metrics (including train and test row counts), per-feature means and standard deviations computed on the training partition, and a global importance vector derived from the absolute Pearson correlation of each input dimension with the fraud label on the training split. While correlation-based ranking is not equivalent to SHAP values, it provides an inexpensive and reproducible global signal that supports transparent reporting alongside tree-based predictions.
-
-\subsection{Inference and explainability integration}
-At runtime, dependency injection selects \texttt{MlNetFraudScoringService} when \texttt{MlPipeline:ModelPath} resolves to an existing file under the API content root (typically \texttt{Models/fraud-model.zip}); otherwise \texttt{HeuristicFraudScoringService} provides a deterministic placeholder so development remains usable before artefacts exist. The ML path uses ML.NET \texttt{PredictionEngine} scoring and loads metadata when present. Local explanations returned to the client combine global correlation weights with a per-instance emphasis proportional to how far each feature deviates from its training mean in units of the training standard deviation; contributions are normalised for presentation. The REST response type \texttt{FraudScoreResponse} additionally exposes optional \texttt{ValidationMetrics} when metadata includes hold-out evaluation figures.
-
-\subsection{Blazor front-end (current scope)}
-The Blazor application was stripped of default template pages (\emph{Counter}, \emph{Weather}) and replaced with dissertation-specific views. The home route presents a hero section, technology summary cards, and an inline SVG architecture diagram (browser $\rightarrow$ REST API $\rightarrow$ ML.NET $\rightarrow$ scored response with explanations). The \texttt{/fraud} route implements interactive scoring against \texttt{/api/fraud/score}, including optional comma-separated entry of \emph{V1}--\emph{V28}. The \texttt{/visuals} route hosts illustrative diagrams intended for slides and chapter figures: a stylised confusion-matrix quadrant chart, a synthetic risk-versus-threshold curve, a PCA heatmap grid driven by a deterministic synthetic pattern, and a ranked bar chart---explicitly labelled as non-live demo visuals distinct from API output.
-
-\subsection{Engineering and reproducibility practices}
-Large binary artefacts (\texttt{*.zip}) and the raw Kaggle CSV are excluded from version control via repository ignore rules; an empty \texttt{Models} folder is retained so operators can drop trained files locally. Development configuration points \texttt{ModelPath} at \texttt{Models/fraud-model.zip} while preserving heuristic fallback when the file is absent.
+\section{Minimal Reproducibility Artefacts}
+A companion source repository provides executable trainers, serialised artefacts, REST scoring surfaces, and interactive visualisations purely to mirror the methodological pipeline; exhaustive source listings are orthogonal to dissertation arguments and remain external reading. Quantitative filings in Table~\ref{tab:model-comparison} should therefore be regenerated from scripted seeds rather than hand-transcribed.
 
 \section{Chapter Summary}
-This chapter detailed how the proposed architecture is implemented as a coherent .NET-based application that combines fraud prediction, local explainability, and analyst-facing interaction. The implementation emphasizes reproducibility, traceability, and practical usability in regulated operational settings. The following chapter synthesizes the main outcomes, limitations, and future research directions.
+This empirical chapter tethered probabilistic forecasting, asymmetric metrics, qualitative explanation critique, and governance reflections to reproducible scaffolding. Subsequent conclusions synthesise whether research questions RQ1--RQ3 received satisfactory intellectual closure.

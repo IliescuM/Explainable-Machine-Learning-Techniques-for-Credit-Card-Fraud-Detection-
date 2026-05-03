@@ -10,10 +10,21 @@ Traditional rule-based systems, which rely on rigid, manually defined thresholds
 
 While these advanced architectures achieve superior predictive accuracy, their internal mechanisms map input features to a probability of fraud through complex, multi-layered mathematical transformations that operate as opaque "black boxes."
 
-\section{The Paradigm of Post-Hoc Analysis}
-To bridge the gap between predictive performance and operational interpretability, the machine learning community has developed a distinct taxonomy of Explainable AI (XAI) frameworks. The most versatile of these is post-hoc analysis. 
+\section{Semantic Taxonomy of Model Interpretability}
+Explainability notions are heterogeneous; therefore a vocabulary is adopted following survey-level categorisations \cite{xai_survey}.
+\begin{enumerate}
+    \item \textbf{Transparency depth:} \emph{ante-hoc} / intrinsic interpretability (models whose structure directly supports auditing) versus \emph{post-hoc} interpretation (explainers applied after training).
+    \item \textbf{Scope:} \emph{global} understanding summarises unconditional dependencies between predictors and risk; \emph{local} understanding conditions on a realised transaction $x$ and investigates sensitivity of $\hat{y}$ under controlled perturbations.
+    \item \textbf{Audience:} compliance-oriented narratives differ from fidelity-oriented diagnostics demanded by modelling teams; ambiguity between \emph{plausible} summaries and \emph{faithful} reconstructions motivates explicit caveats whenever explanations feed operational decisions \cite{xai_survey}.
+\end{enumerate}
+Fraud operations primarily seek local, post-hoc evidence per alert; therefore later chapters analyse methods that quantify instance-level contributions while referencing global artefacts only as corroborative context.
 
-Post-hoc explainability methods treat the underlying predictive model as a black box. By observing the inputs provided to the model and the corresponding outputs it generates, these techniques reverse-engineer the decision logic. The primary advantage of post-hoc analysis is that it is inherently model-agnostic. The explainability layer is entirely decoupled from the predictive layer, meaning engineers can upgrade or replace the core fraud detection algorithm without rebuilding the interpretability infrastructure.
+\section{The Paradigm of Post-Hoc Analysis}
+Among post-hoc families, perturbation-derived surrogates and axiomatic attribution maps dominate tabular deployments. Conceptually these methods analyse the directional derivatives of scoring maps $f_\theta:\mathbb{R}^d\to[0,1]$ induced by stochastic classifiers fitted on historical fraud labels.
+
+These techniques treat---at least nominally---the underlying predictor as inaccessible except through query-oracle evaluations. Inputs are manipulated, neighbourhoods are calibrated, cooperative games over feature coalitions may be enumerated (or approximated), and explanatory vectors summarise emergent curvature of $f_\theta$ restricted to neighbourhoods of empirical interest.
+
+The methodological advantage motivating post-hoc choice in financial tooling is encapsulation: the interpretability façade can nominally traverse model upgrades conditioned on preserving API contracts---subject to explanatory stability constraints discussed later.
 
 \section{Advanced Post-Hoc Interpretability Frameworks}
 Two of the most prominent model-agnostic, post-hoc explanation frameworks currently driving the field are LIME and SHAP. Both frameworks can be applied to a broad range of predictive models and are widely adopted in explainable AI practice \cite{lime_original,shap_original,xai_survey}.
@@ -35,6 +46,22 @@ SHAP calculates the exact marginal contribution of each feature across all possi
 \phi_i = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! (|N| - |S| - 1)!}{|N|!} \left[ f_x(S \cup \{i\}) - f_x(S) \right]
 \end{equation}
 Where $N$ is the set of all features, and $S$ is a subset of features not containing $i$. This guarantees that the sum of the individual feature attributions perfectly equals the difference between the model's base expectation and the final prediction, ensuring consistent and mathematically sound explanations for every flagged transaction.
+
+\section{Measuring Classification Quality under Rare Positives}
+Class prevalence $\pi=P(y{=}1)$ in retail card streams is microscopic; thus the contingency matrix induces skewed ROC dominance without exposing precision collapse. Accuracy $\frac{TN+TP}{N}$ inflates mechanically when negatives dominate even if $TP\to0$.
+
+The precision--recall curve traces $\text{Recall}(\tau)$ against $\text{Precision}(\tau)$ as the score threshold varies. Integrated measures such as average precision quantify expected precision across recall operating points without assuming symmetry of errors:
+\begin{equation}
+\text{AP} = \sum_{k} (R_k-R_{k-1}) P_k ,
+\end{equation}
+where ordered thresholds induce precision $P_k$ at recall breakpoints $R_k$---a pragmatic scalar aligned with asymmetric costs \cite{fraud_handbook}. ROC-AUC still measures ranking separability among positives versus negatives yet can remain high despite economically unacceptable false-positive tides; therefore both ROC and precision--recall summaries deserve parallel reporting.
+
+Operational decisions hinge on thresholds $\tau$ mapping scores to escalate/stop workflows. Equivalent viewpoints cast $\tau$-selection as constrained optimisation balancing expected fraud loss versus investigation budget: denote by $c_{FP}$, $c_{FN}$ asymmetric costs attached to erroneous legitimate vs fraudulent classifications; heuristic Bayes-risk style criteria motivate studying iso-cost surfaces in ROC or PR geometries even when plug-in probabilities are imperfectly calibrated \cite{fraud_handbook}.
+
+\section{Faithfulness, Stability, and Adversarial Drift}
+Local explanations hinge on neighbourhoods; minor distributional perturbations---including adversarial adaptations by fraud actors---alter attributions unpredictably unless regularity conditions (Lipschitz moderation, calibrated scores) partially hold \cite{xai_survey}. Therefore explanations must never be anthropomorphised as causal attributions independent of latent confounders in observational transactional data.
+
+From a longitudinal perspective concept drift induces time-varying $f_{\theta}$, rendering static explanation templates stale. Periodic recalibration, monitoring of population stability indices, and revalidation of explanatory alignment with investigator heuristics are theoretical obligations distinct from episodic modelling accuracy gains.
 
 \section{Explainability in Regulated Financial Contexts}
 Financial fraud detection is not only a predictive analytics problem, but also a governance problem. In production settings, model outputs may influence high-impact decisions such as transaction blocking, temporary account restrictions, and escalation to manual investigations. As a consequence, institutions must balance statistical performance with accountability, traceability, and decision transparency.
