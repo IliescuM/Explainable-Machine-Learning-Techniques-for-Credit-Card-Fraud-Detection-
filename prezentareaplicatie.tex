@@ -1,0 +1,151 @@
+\chapter{Application Presentation}
+
+\section{Implementation Scope and Chapter Goals}
+This chapter presents the practical implementation of the proposed architecture, focusing on how the conceptual components described previously are realized in a deployable software system. The implementation is organized around three goals: reliable fraud scoring, interpretable outputs for analysts, and operational traceability for governance and audit requirements.
+
+The application follows a layered design that separates machine learning operations, business services, and user interaction logic. This structure supports maintainability, controlled testing, and progressive extension of system capabilities without requiring disruptive refactoring.
+
+\section{Technology Stack and Project Structure}
+The solution is implemented using .NET 10, ASP.NET Core Web API, Blazor, and ML.NET. This stack enables the model lifecycle, inference pipeline, and analyst dashboard to remain within a single engineering ecosystem, reducing integration overhead and minimizing cross-language deployment complexity \cite{dotnet_docs,blazor_docs,mldotnet_docs}.
+
+At the codebase level, the project can be organized into distinct modules: data contracts, feature pipeline, model training, inference service, explainability service, API layer, and presentation layer. This modularization ensures that model updates, feature schema changes, and front-end refinements can be handled with controlled impact across the system.
+
+\section{Backend Services and Inference Flow}
+The backend exposes REST endpoints for transaction scoring and explanation retrieval. A typical request flow begins when the client submits transaction attributes to the API. The service validates the payload, applies the same preprocessing transformations used during training, executes model inference, computes explanation artifacts, and returns a structured response containing score, decision support metadata, and explanation details.
+
+To preserve consistency between training and serving, transformation steps are versioned and reused as serialized artifacts alongside the trained model. This approach reduces the risk of training-serving skew, where mismatched preprocessing logic can degrade production performance despite strong offline metrics.
+
+Each prediction response includes a model version identifier and a processing timestamp. These fields are essential for reproducibility and for analyzing behavior differences when multiple model iterations are tested over time.
+
+\section{Model Training Pipeline in ML.NET}
+Model training is implemented as a repeatable pipeline that ingests labeled transaction data, applies feature transformations, and fits a binary classification model suitable for imbalanced tabular data \cite{fraud_handbook,mldotnet_docs}.
+
+The training workflow includes data split management, feature set declaration, hyperparameter configuration, and evaluation generation. Results are persisted together with metadata describing dataset period, schema version, and configuration settings. This metadata enables controlled comparison across experiments and supports robust reporting in the evaluation chapter.
+
+From a software engineering perspective, training is executed as an explicit workflow step rather than an implicit side effect of application startup. This separation allows model retraining schedules, approval gates, and rollback processes to be managed under clear operational policies.
+
+\section{Explainability Service Integration}
+The explainability service is invoked after model inference and computes local feature attributions for each scored transaction. The returned explanation object is normalized into a human-readable structure that can be rendered consistently in the analyst interface, regardless of the underlying attribution mechanism.
+
+For operational usability, the service returns ranked positive and negative contributors, together with compact textual descriptors suitable for case notes. The objective is not to replace analyst judgment but to provide transparent evidence that accelerates triage and improves confidence in automated recommendations.
+
+The implementation also records explanation metadata in the audit log so that historical decisions remain interpretable even after model updates, subject to model artifact retention policies.
+
+\section{Blazor Front-End and Analyst Workflow}
+The Blazor user interface is designed around real fraud analyst activities: queue prioritization, case inspection, explanation review, and action logging. The main dashboard presents a ranked list of suspicious transactions and supports filtering by operationally relevant criteria such as amount intervals, merchant segments, and processing time windows.
+
+When an analyst opens a case, the interface combines transaction details, model score, and ranked feature contributions in a single view. This integrated presentation reduces cognitive overhead and avoids context switching between disconnected tools. User actions are explicitly captured and persisted to enable workflow analytics and future supervised feedback loops.
+
+\section{Security, Logging, and Operational Controls}
+Because the application processes sensitive financial data, the implementation includes role-based access control, secure API communication, and logging policies that limit the exposure of personally identifiable information. Sensitive fields are masked in logs and selectively displayed in the interface based on authorization policies.
+
+Operational controls include model version tracking, request correlation identifiers, and immutable event logging for prediction and analyst actions. These controls provide a traceable chain of evidence for internal quality reviews and external compliance processes.
+
+\section{Deployment Perspective}
+The application is deployment-ready for staged environments (development, validation, and production) through externalized configuration and environment-specific secrets handling. Model paths, threshold values, and service endpoints are configurable without code changes, enabling controlled release management.
+
+This deployment strategy supports progressive rollout of model versions and facilitates rollback when monitoring indicates performance degradation or unexpected behavior.
+
+\section{Experimental Setup and Evaluation Protocol}
+To ensure that model performance claims are reproducible and academically defensible, the evaluation process follows a fixed protocol. The dataset is partitioned into training, validation, and test subsets using temporal constraints where possible, in order to avoid information leakage from future transactions into historical training data. All preprocessing steps applied during training are serialized and reused during inference.
+
+Given the imbalanced nature of fraud detection, model quality is assessed using metrics that reflect both detection power and operational impact. In addition to precision and recall, the evaluation includes F1-score and precision-recall area under curve (PR-AUC), because these measures are more informative than accuracy in highly skewed class distributions \cite{fraud_handbook}. Threshold analysis is performed to identify the operating point that balances fraud capture with analyst workload.
+
+The baseline comparison includes at least one simple model (for example, logistic regression) and one strong non-linear model (for example, gradient boosting). This comparative design supports a credible argument that final model selection is driven by evidence rather than by implementation convenience.
+
+\section{Evaluation Metrics}
+Let $TP$, $FP$, $TN$, and $FN$ denote true positives, false positives, true negatives, and false negatives, respectively. The main evaluation metrics are defined as:
+\begin{equation}
+\text{Precision} = \frac{TP}{TP + FP}
+\end{equation}
+\begin{equation}
+\text{Recall} = \frac{TP}{TP + FN}
+\end{equation}
+\begin{equation}
+F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+\end{equation}
+
+Precision indicates the quality of positive fraud alerts, while recall indicates how many fraudulent events are successfully captured. Because missed fraud cases can have significant financial consequences, recall is treated as a strategic metric; however, precision must remain sufficiently high to keep manual investigation volume manageable.
+
+\section{Result Reporting Template}
+The final dissertation should report results in a compact, reproducible format. Table~\ref{tab:model-comparison} provides the structure used to summarize model performance.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}Xcccc}
+\toprule
+\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{PR-AUC} \\
+\midrule
+Logistic Regression (baseline) & to be reported & to be reported & to be reported & to be reported \\
+FastTree / Gradient Boosting & to be reported & to be reported & to be reported & to be reported \\
+Selected Final Model & to be reported & to be reported & to be reported & to be reported \\
+\bottomrule
+\end{tabularx}
+\caption{Model comparison on held-out test data.}
+\label{tab:model-comparison}
+\end{table}
+
+In addition to aggregate metrics, transaction-level explanation case studies should be included. For each representative case, the report should provide: the predicted probability, top positive contributors, top negative contributors, and the analyst decision taken after reviewing the explanation. This presentation links model behavior to actual operational reasoning.
+
+\section{Results and Discussion}
+This section interprets the empirical outcomes in relation to the thesis objective: combining strong fraud detection performance with actionable explainability in a production-oriented .NET environment. The quantitative narrative should be completed only with measured values obtained from the final experiments.
+
+\subsection{Predictive Performance Interpretation}
+Using Table~\ref{tab:model-comparison}, the first discussion point should compare the baseline model against the selected final model. If the final model improves recall while maintaining acceptable precision, this indicates better fraud capture without an unmanageable increase in false alerts. If precision improves at similar recall levels, the model is likely reducing analyst workload while preserving detection coverage.
+
+The dissertation should explicitly report absolute differences between models. For example:
+\begin{itemize}
+    \item Precision improvement: $[P_{\text{final}} - P_{\text{baseline}}]$.
+    \item Recall improvement: $[R_{\text{final}} - R_{\text{baseline}}]$.
+    \item F1-score improvement: $[F1_{\text{final}} - F1_{\text{baseline}}]$.
+\end{itemize}
+These comparisons provide evidence that model selection is performance-driven rather than arbitrary.
+
+\subsection{Operational Threshold Analysis}
+Beyond model choice, threshold selection has direct operational impact. The final thesis text should justify the selected threshold $\tau^\star$ by linking it to expected analyst capacity and fraud-risk tolerance. A practical interpretation should answer the following:
+\begin{itemize}
+    \item How many alerts per day are generated at $\tau^\star$?
+    \item What percentage of known fraud cases is captured at $\tau^\star$?
+    \item How does changing $\tau$ affect false-positive volume?
+\end{itemize}
+This analysis demonstrates that the solution is not only statistically valid but operationally deployable.
+
+\subsection{Explainability Utility in Analyst Decisions}
+The explanation layer should be evaluated through representative case studies. For each case, the chapter should document the model score, dominant feature contributors, and the analyst action. A concise reporting template is shown in Table~\ref{tab:case-study-template}.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{cc>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Case ID} & \textbf{Model score} & \textbf{Top contributors} & \textbf{Analyst action} \\
+\midrule
+Case 1 & to be reported & to be reported & to be reported \\
+Case 2 & to be reported & to be reported & to be reported \\
+Case 3 & to be reported & to be reported & to be reported \\
+\bottomrule
+\end{tabularx}
+\caption{Transaction-level explanation case study template.}
+\label{tab:case-study-template}
+\end{table}
+
+Discussion should focus on whether explanations are stable, understandable, and aligned with domain intuition. If explanations frequently highlight features that analysts consider irrelevant, this may indicate feature leakage, spurious correlations, or limits in preprocessing constraints.
+
+\subsection{Business and Compliance Perspective}
+Results should also be interpreted from a governance perspective. The combination of prediction logs, model versioning, and explanation metadata provides a traceable decision trail that supports audit readiness. The final chapter text should therefore include a short statement on how these artifacts satisfy internal review and accountability requirements in financial environments.
+
+\subsection{Limitations of Reported Results}
+The discussion must acknowledge that results are conditional on the available dataset, labeling quality, and observation period. If the dataset is geographically or temporally narrow, external validity is limited. If fraud patterns shift, periodic retraining and threshold recalibration become mandatory. Presenting these limitations strengthens academic credibility.
+
+\section{Threats to Validity}
+Three validity risks are explicitly considered. First, data shift over time may reduce model performance after deployment if fraud patterns evolve. Second, local explanation quality can vary across model families and should not be interpreted as causal proof. Third, operational effectiveness depends not only on model metrics but also on user interface quality and analyst workflow adoption.
+
+Addressing these risks requires periodic retraining, monitoring of metric drift, and controlled user feedback loops integrated into the application lifecycle.
+
+\section{Chapter Summary}
+This chapter detailed how the proposed architecture is implemented as a coherent .NET-based application that combines fraud prediction, local explainability, and analyst-facing interaction. The implementation emphasizes reproducibility, traceability, and practical usability in regulated operational settings. The following chapter synthesizes the main outcomes, limitations, and future research directions.

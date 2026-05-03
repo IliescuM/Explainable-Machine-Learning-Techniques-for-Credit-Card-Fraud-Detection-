@@ -1,0 +1,47 @@
+\definecolor{code}{rgb}{0.97,0.97,0.97}
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  backgroundcolor=\color{code},
+  breaklines=true,
+%  frame=L,
+%  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  morekeywords={bool,
+  				 glutMainLoop, glutIdleFunc, glMatrixMode, glLoadIdentity, glPushMatrix, glPopMatrix, 
+  				 glBegin, glEnd, glTranslatef, glRotatef, glScalef, glColor3f, glColor4f, glutSolidCube, glutWireCube, glutSolidSphere,
+  				 glutWireSphere, glutSolidCone,glutSetWindowTitle,glutGet,glClear,glutSwapBuffers,glDepthFunc,
+  				 glutWireCone, glutSolidTorus, glutWireTorus, glutSolidDodecahedron, glutWireDodecahedron,
+  				 glutSolidOctahedron, glutWireOctahedron, glutSolidTetrahedron, glutWireTetrahedron, 
+  				 glVertex3f,glVertex2f,glPointSize,
+  				 glutSolidIcosahedron, glutWireIcosahedron, glutSolidTeapot, glutWireTeapot,glutReshapeFunc,
+  				 glFlush, gluPerspective, glutPostRedisplay, glutInit, glutKeyboardFunc,glutKeyboardUpFunc,
+  				 glutInitWindowSize, glutInitWindowPosition, glutInitDisplayMode, glutCreateWindow, glutDisplayFunc,glutPassiveMotionFunc,
+  				 glClear,glTexCoord2f,
+  				 glEnable, glDisable, glLightfv, glMaterialfv, glCullFace,glViewport,
+  				 glFrontFace,glColor3ub, glShadeModel,
+  				 glGenLists, glGetFloatv,glGentextures,glTexImage2D,glTexParameteri, free, glDeleteTextures,
+  				 glLineStipple, glLineWidth, glBindTexture,glGenTextures,
+  				 glNewList, glEndList, glCallList,
+  				 glMap1f,glEvalCoord1f,glMapGrid1d,glEvalMesh1,glMap2f,glEvalCoord2f,glMapGrid2f,glEvalMesh2,
+  				 gluBeginTrim, gluEndTrim, gluPwlCurve,glHint,
+  				 GLUnurbsObj, gluBeginSurface, gluNurbsSurface, gluEndSurface, gluNewNurbsRenderer, 									gluNurbsProperty,gluQuadricNormals,
+  				 glNormal3f,
+  				 gluQuadricTexture,GLUquadricObj,gluSphere,
+  				 glPolygonMode, glBlendFunc,glFogi,glFogiv,glFogfv,
+  				 GLfloat, GLdouble, GLint,GLuint, GLushort,GLubyte, glRasterPos2f,
+  				 gluBeginCurve, gluNurbsCurve, gluEndCurve,
+  				 glOrtho, gluLookAt, glutBitmapCharacter, 
+  				 glInitNames, glPushName, glLoadName, glSelectBuffer, glRenderMode,gluPickMatrix, glGetIntegerv, glutMouseFunc,glutMotionFunc,system,
+  				 glPushAttrib, glPopAttrib, glMultMatrixf, sprintf, glClearStencil, glStencilFunc,glStencilOp,glStencilMask,glColorMask,glActiveStencilFaceEXT,fprintf},  
+%   numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  %numbersep=5pt,                   % how far the line-numbers are from the code
+  %numberstyle=\tiny\color{code}, % the style that is used for the line-numbers
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+}
+
+\lstset{escapechar=@,style=customc}

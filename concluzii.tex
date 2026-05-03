@@ -1,0 +1,29 @@
+\chapter{Conclusions}
+
+\section{Research Outcomes}
+This dissertation addressed the challenge of combining predictive effectiveness and interpretability in financial fraud detection by designing and implementing a unified .NET-based solution. The work demonstrated how ML.NET-driven classification, local explanation generation, and a Blazor analyst interface can be integrated into a single operational workflow suitable for real-world decision support contexts \cite{fraud_handbook,mldotnet_docs,blazor_docs}.
+
+The proposed architecture contributes a practical template for organizations that require maintainable, traceable, and explainable fraud detection capabilities without introducing cross-ecosystem complexity. In particular, the dissertation emphasized that explainability is not an auxiliary feature, but a core requirement for trust, adoption, and responsible use of machine learning in regulated domains.
+
+\section{Answering the Research Direction}
+The thesis objective was to evaluate whether an explainable fraud detection pipeline can be implemented effectively in a fully .NET environment while preserving operational usability. The results of the system design and implementation indicate that this objective is feasible under clear engineering constraints related to data quality, feature governance, and model lifecycle control.
+
+From a user perspective, integrating local explanations into the analyst workflow improves transparency of model outputs and supports more informed triage decisions. From a system perspective, versioned artifacts and auditable prediction records provide a foundation for reproducibility and post-hoc review.
+
+\section{Practical Implications}
+For financial institutions, the main practical implication is that explainable AI can be operationalized as a decision support capability rather than treated as a research-only add-on. A coherent implementation that joins prediction, explanation, and action logging can improve collaboration between data science teams, software engineers, and fraud operations analysts.
+
+The work also highlights the importance of aligning model metrics with business constraints. In fraud detection, evaluation is not limited to aggregate accuracy; it must account for class imbalance, investigation capacity, and the cost of false negatives and false positives.
+
+\section{Limitations}
+Several limitations should be acknowledged. First, model behavior and explanation quality depend strongly on the representativeness and quality of the available transaction data. Second, local explanation methods provide useful evidence for individual predictions, but they do not establish causal relationships and may be sensitive to modeling assumptions \cite{shap_original}.
+
+Third, operational performance claims must be interpreted in relation to the specific deployment setting, infrastructure, and analyst workflow in which the system is evaluated. Generalization to other institutions or fraud typologies requires additional validation.
+
+\section{Future Work}
+Future work can extend this dissertation along four directions. The first direction is broader evaluation across multiple datasets and temporal windows to assess robustness under distribution shifts. The second direction is integrating global explainability views and drift monitoring dashboards for model governance teams.
+
+The third direction is introducing structured analyst feedback loops to support periodic retraining and policy-aware threshold adjustment. The fourth direction is comparative benchmarking of alternative explainability methods and model families under identical operational constraints, enabling evidence-based selection for production environments.
+
+\section{Final Remarks}
+This dissertation argued and demonstrated that explainability and engineering practicality can be addressed jointly in a fraud detection application. By combining a coherent software architecture, reproducible model lifecycle practices, and analyst-centered interface design, the work contributes both an implementation path and a research foundation for future advances in transparent financial AI systems.

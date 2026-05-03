@@ -1,0 +1,30 @@
+\chapter{Motivation and Introduction}
+
+\section{Background on Credit Card Fraud Detection}
+Credit card fraud is a significant and escalating challenge in the global financial ecosystem. As digital transactions, e-commerce platforms, and contactless payments continue to grow rapidly, malicious actors continuously develop sophisticated methodologies to bypass traditional security measures. Fraudulent typologies have evolved from simple physical card theft to complex vectors including phishing, skimming, account takeover, and card-not-present fraud. 
+
+As detailed in contemporary fraud detection literature, building robust defense mechanisms requires understanding the unique nature of financial data \cite{fraud_handbook}. Fraud detection systems operate in a highly dynamic environment characterized by extreme class imbalance—where legitimate transactions vastly outnumber fraudulent ones—and concept drift, as fraudsters continuously alter their tactics to evade detection. Consequently, financial institutions must rely on highly adaptive systems capable of processing immense volumes of transactional data in milliseconds.
+
+\section{The Machine Learning Black Box Dilemma}
+To tackle these complex data challenges, the industry has universally shifted towards advanced machine learning algorithms. Traditional rule-based systems, which relied on rigid, manually defined thresholds, are increasingly being replaced by dynamic, data-driven approaches. Models such as Gradient Boosting Machines and Deep Neural Networks have become the industry standard due to their ability to process massive volumes of transactional data and identify complex, non-linear patterns.
+
+However, these highly complex models inherently act as opaque "black boxes." While they output a precise probability score indicating the likelihood of fraud, they do not provide visibility into the reasoning behind their decisions. From a business and regulatory perspective, predictive accuracy alone is insufficient. In the highly regulated financial industry, automated decision-making is subject to strict scrutiny. Frameworks such as the General Data Protection Regulation mandate transparency. If a legitimate transaction is falsely declined, the institution must be able to justify the decision. Operating a purely black-box model introduces immense business risk, hinders customer trust, and complicates compliance audits.
+
+\section{Explainable AI and Post-Hoc Analysis}
+To resolve the tension between high predictive performance and the absolute business requirement for transparency, this thesis explores the implementation of Explainable Artificial Intelligence. Specifically, the research focuses on post-hoc analysis techniques. Post-hoc explainability methods treat the underlying predictive model as a black box and reverse-engineer the decision logic by observing the inputs and outputs after the training phase is complete.
+
+Two of the most robust post-hoc techniques currently driving the field are Local Interpretable Model-agnostic Explanations (LIME) and SHapley Additive exPlanations (SHAP). Both frameworks possess the critical capability of being applied to any underlying algorithm, thereby transforming opaque probabilities into actionable business insights \cite{lime_original,shap_original}. By utilizing these local surrogate models, practitioners can extract human-readable explanations for individual predictions without sacrificing the predictive power of the underlying algorithms.
+
+\section{Thesis Objectives and Contributions}
+This dissertation aims to bridge the gap between high-performance predictive modeling and regulatory compliance by engineering an end-to-end, transparent fraud detection system. Moving beyond theoretical analysis, this project implements a monolithic 100\% .NET 10 architecture to solve the traditional two-language bottleneck of machine learning deployments.
+
+The primary contributions of this thesis are:
+\begin{enumerate}
+    \item A rigorous analysis of machine learning challenges in financial anomaly detection, focusing on the trade-off between algorithmic complexity and interpretability.
+    \item The implementation of a highly accurate Gradient Boosting classifier using ML.NET, fully integrated within a .NET 10 Web API backend.
+    \item The application of native post-hoc explainability frameworks based on feature contribution calculations to decode the model's outputs.
+    \item The development of a reactive Blazor Web App dashboard that visually translates mathematical feature attributions into intuitive interfaces for fraud analysts, drastically reducing investigation times.
+\end{enumerate}
+
+\section{Document Structure}
+The remainder of this dissertation is structured as follows. Chapter 2 reviews the state of the domain, detailing the theoretical foundations of Explainable AI and post-hoc analysis. Chapter 3 presents the proposed monolithic .NET methodology and the mathematical architecture of the explainability layer. Chapter 4 details the software engineering implementation, dataset characteristics, and the Blazor user interface. Finally, Chapter 5 concludes the research and proposes avenues for future development.

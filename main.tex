@@ -1,0 +1,54 @@
+\documentclass[a4paper,12pt,oneside]{report}
+\usepackage{OvidiusFMI}
+
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{caption}
+\captionsetup{hypcap=false}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{color,xcolor}
+\usepackage{framed}
+\usepackage{enumerate}
+\usepackage{listings}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array}
+\usepackage{multicol,multirow}
+\usepackage{tabularx,booktabs}
+\input{custom-lst-style}
+
+\renewcommand{\tablename}{Table}
+\renewcommand{\figurename}{Figure}
+
+\facultatea{Mathematics and Computer Science}
+
+\specializarea{Computer Science}
+
+\teza{Master’s dissertation}
+
+\titlu{Explainable Machine Learning Techniques for Credit Card Fraud Detection }
+
+\gradDidacticCP{Dr.}
+\coordonatorPrincipal{Elena Băutu}
+
+\autor{Mihnea Iliescu}
+\data{2026}
+
+\begin{document}
+\maketitle
+
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+
+\pagenumbering{arabic}
+
+\include{motivatie}
+\include{staredomeniu}
+\include{solutiepropusa}
+\include{prezentareaplicatie}
+\include{concluzii}
+
+\bibliographystyle{unsrt}
+\setlength{\baselineskip}{\normalbaselineskip}
+\setlength{\parskip}{0pt}
+\bibliography{refs}
+\end{document}

@@ -1,0 +1,66 @@
+\chapter{Proposed Solution}
+
+\section{Design Objectives and Constraints}
+The proposed solution is designed as an end-to-end decision support system for transaction fraud detection that combines predictive modeling with model interpretability capabilities suitable for real operational use. The primary objective is to improve analyst decision quality by providing both a fraud risk score and an explanation of the factors that most influenced each prediction.
+
+A second objective is to maintain a fully .NET-based technology stack in order to reduce integration overhead, simplify maintainability, and align with enterprise environments where Microsoft ecosystems are already standard. The system therefore uses .NET 10 for backend services, Blazor for the analyst-facing web interface, and ML.NET for model development and inference.
+
+From an operational perspective, the architecture must satisfy four constraints: reproducibility of model behavior across environments, traceability of prediction events for audit scenarios, low-latency response during analyst workflows, and modularity to support future model or explanation-method replacement.
+
+\section{System Architecture}
+The system architecture follows a layered pattern composed of data, model, explainability, application, and governance layers. This separation reduces coupling between data preparation, model inference, and user-facing interaction logic.
+
+At a high level, transaction records are ingested and transformed into feature vectors through a deterministic preprocessing pipeline. The trained ML.NET model consumes these vectors and produces a fraud probability estimate. The explainability component then generates a local explanation object that quantifies feature influence for the specific transaction under analysis. The Blazor interface presents both prediction and explanation artifacts to the analyst in a unified workflow.
+
+The architecture also includes an event logging and audit trail mechanism that stores model version, input snapshot identifiers, prediction score, and explanation summary metadata. This design supports post-hoc review of automated recommendations and is aligned with transparency requirements in high-stakes decision systems.
+
+\section{Data Processing and Feature Engineering}
+Fraud detection performance depends strongly on data quality, feature consistency, and class imbalance handling strategy \cite{fraud_handbook}. For this reason, preprocessing is implemented as a versioned pipeline with explicit schema contracts. Each transformation step (missing-value policy, categorical encoding, scaling or normalization where required, and temporal aggregation features) is defined declaratively to ensure reproducible training-serving parity.
+
+Formally, each transaction is represented by a feature vector $x \in \mathbb{R}^d$, and the model computes a fraud risk score:
+\begin{equation}
+\hat{y} = f_{\theta}(x), \quad \hat{y} \in [0,1]
+\end{equation}
+where $\hat{y}$ is interpreted as the estimated probability of fraud and $\theta$ denotes the trained model parameters. A binary decision is then obtained using a configurable threshold $\tau$:
+\begin{equation}
+\text{decision}(x) =
+\begin{cases}
+\text{fraud}, & \hat{y} \geq \tau \\
+\text{legitimate}, & \hat{y} < \tau
+\end{cases}
+\end{equation}
+
+Feature design is guided by both domain relevance and explainability utility. In addition to predictive value, selected features should remain semantically interpretable by fraud analysts, such as transaction amount patterns, velocity indicators, merchant-risk aggregates, and behavioral deviations relative to customer historical profiles. Highly opaque engineered features are minimized unless they provide substantial incremental predictive benefit.
+
+To address class imbalance, the pipeline incorporates threshold-aware evaluation and may include weighted learning or rebalancing strategies depending on dataset characteristics. The final decision threshold is treated as a business parameter and calibrated based on risk appetite and investigation capacity rather than fixed at a default probability cutoff.
+
+\section{Fraud Detection Model Strategy}
+The model strategy emphasizes a practical balance between predictive effectiveness and operational maintainability. ML.NET is used to train and deploy supervised binary classification models suitable for tabular transaction data \cite{mldotnet_docs}. Candidate families may include tree-based approaches and linear baselines, with final selection based on validation performance and stability under drift-sensitive conditions.
+
+Model development follows a controlled experimentation protocol: train-validation-test separation, feature ablation checks, and metric selection aligned with imbalanced classification settings (for example, precision, recall, F1-score, and PR-AUC). Because false negatives in fraud detection can carry high financial impact, recall-sensitive analysis is explicitly considered alongside precision and workload constraints.
+
+To support reliable production use, each trained model artifact is versioned and stored with metadata describing training window, feature schema version, hyperparameter configuration, and evaluation summary. This metadata-driven lifecycle allows rollback and comparative analysis between model versions during monitoring or incident review.
+
+\section{Explainability Layer}
+Predictive output alone is insufficient for analyst trust in many financial risk workflows. Therefore, the proposed solution introduces a local explainability layer that generates reason codes per transaction and ranked feature contributions. Conceptually, this layer can be instantiated with perturbation-based (LIME-like) or contribution-based (SHAP-like) methods, adapted to ML.NET inference outputs and practical latency constraints \cite{lime_original,shap_original}.
+
+For each scored transaction, the system returns predicted fraud probability, top positive contributors to fraud likelihood, top negative contributors, and a short natural-language summary template for analyst readability.
+
+To prevent explanation misuse, the interface clarifies that explanations describe model behavior for a given instance and do not represent causal proof of fraud. This distinction is critical for responsible deployment in compliance-sensitive contexts.
+
+\section{Application Layer and User Interaction}
+The Blazor-based front-end is designed around fraud analyst tasks: queue triage, transaction drill-down, explanation review, and action logging. The workflow begins with a prioritized transaction list sorted by model risk score and configurable filters (time, amount range, merchant category, customer segment).
+
+Selecting a transaction opens a detail view that combines raw transaction attributes, derived risk indicators, model score, and explanation panel. This integrated presentation reduces context switching and supports faster, evidence-backed triage decisions. Analyst actions (escalate, dismiss, request additional evidence) are recorded together with model outputs to create feedback data for future model improvement and governance reporting.
+
+The application is structured to allow future extension, including alert orchestration, case management integration, and comparative explanation views across model versions.
+
+\section{Security, Auditability, and Deployment Considerations}
+Given the sensitivity of financial data, the solution applies secure-by-design principles including role-based access control, transport security, and strict logging hygiene to avoid exposing personal or confidential attributes in diagnostic traces. Sensitive fields are masked in user-facing views unless explicitly required by user role and policy.
+
+Auditability is implemented through immutable prediction event records linking input reference IDs, model version, timestamp, operator action, and explanation summary hash. This enables reproducible reconstruction of decision context during internal audits or regulatory review.
+
+Deployment is container-ready and environment-agnostic, with externalized configuration for model paths, thresholds, and feature pipeline settings. This supports consistent promotion across development, staging, and production while preserving traceable configuration history.
+
+\section{Chapter Summary}
+This chapter presented a fully .NET-centered architecture for explainable fraud detection, integrating ML.NET-based scoring, local explanation generation, and a Blazor analyst interface into a cohesive operational system. The design prioritizes practical deployment concerns such as reproducibility, governance, and analyst usability while preserving flexibility for iterative model evolution. The next chapter details implementation decisions, component realization, and key technical artifacts produced during development.
