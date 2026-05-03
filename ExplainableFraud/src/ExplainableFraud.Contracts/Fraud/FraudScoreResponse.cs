@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ExplainableFraud.Contracts.Fraud;
 
 public sealed class FraudScoreResponse
@@ -7,4 +9,8 @@ public sealed class FraudScoreResponse
     public float DecisionThreshold { get; init; }
     public required IReadOnlyList<FeatureContributionDto> FeatureContributions { get; init; }
     public string ModelVersion { get; init; } = "";
+
+    /// <summary>Populated when scoring uses a trained pipeline with evaluation metadata.</summary>
+    [JsonPropertyName("validationMetrics")]
+    public ModelValidationMetricsDto? ValidationMetrics { get; init; }
 }

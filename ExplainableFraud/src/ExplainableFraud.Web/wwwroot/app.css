@@ -1,5 +1,13 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: system-ui, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f4f6f9;
+    min-height: 100%;
+}
+
+main article.content {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 a, .btn-link {

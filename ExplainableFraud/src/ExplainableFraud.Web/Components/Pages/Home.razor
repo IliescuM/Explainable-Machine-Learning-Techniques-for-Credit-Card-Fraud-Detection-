@@ -1,7 +1,99 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Explainable fraud detection</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="hero rounded-4 mb-4">
+    <div class="hero-inner">
+        <p class="hero-kicker mb-2">Dissertation demo · ML.NET · Blazor</p>
+        <h1 class="hero-title display-5 fw-bold mb-3">Explainable scoring for card fraud</h1>
+        <p class="hero-lead lead mb-4">
+            Score transactions with Amount, Time, and PCA features (V1–V28), same layout as the classic
+            <a href="https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud" target="_blank" rel="noopener" class="link-light text-decoration-underline">Kaggle credit card fraud</a>
+            dataset—then inspect probabilities and feature-level explanations.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-light btn-lg px-4" href="fraud">Open fraud scorer</a>
+            <a class="btn btn-outline-light btn-lg" href="visuals">View diagrams &amp; heatmaps</a>
+        </div>
+    </div>
+</section>
 
-Welcome to your new app.
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm feature-card">
+            <div class="card-body">
+                <div class="feature-icon mb-3" aria-hidden="true">◎</div>
+                <h2 class="h5 card-title">Model</h2>
+                <p class="card-text text-muted small mb-0">
+                    FastTree binary classifier trained offline; API falls back to a deterministic heuristic when no model file is present.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm feature-card">
+            <div class="card-body">
+                <div class="feature-icon mb-3" aria-hidden="true">◇</div>
+                <h2 class="h5 card-title">Explainability</h2>
+                <p class="card-text text-muted small mb-0">
+                    Global ranking plus deviation from training statistics highlights which PCA dimensions and scalars matter for each scored row.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm feature-card">
+            <div class="card-body">
+                <div class="feature-icon mb-3" aria-hidden="true">→</div>
+                <h2 class="h5 card-title">Stack</h2>
+                <p class="card-text text-muted small mb-0">
+                    ASP.NET Core API, ML.NET inference, and this Blazor Server UI—see the architecture diagram below.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Architecture</h2>
+        <p class="text-muted small mb-4">Request flow from browser to model and back with structured explanations.</p>
+        <div class="architecture-diagram overflow-auto">
+            <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" class="w-100" style="max-height: 220px;">
+                <defs>
+                    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#0d6efd;stop-opacity:0.15" />
+                        <stop offset="100%" style="stop-color:#6610f2;stop-opacity:0.12" />
+                    </linearGradient>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#6c757d" />
+                    </marker>
+                </defs>
+                <rect x="10" y="40" width="130" height="100" rx="12" fill="url(#boxGrad)" stroke="#0d6efd" stroke-width="2" />
+                <text x="75" y="95" text-anchor="middle" class="svg-label" font-size="14" font-family="system-ui,sans-serif" fill="#212529">Blazor UI</text>
+
+                <line x1="140" y1="90" x2="195" y2="90" stroke="#6c757d" stroke-width="2" marker-end="url(#arrow)" />
+
+                <rect x="200" y="40" width="130" height="100" rx="12" fill="url(#boxGrad)" stroke="#198754" stroke-width="2" />
+                <text x="265" y="88" text-anchor="middle" font-size="14" font-family="system-ui,sans-serif" fill="#212529">REST API</text>
+                <text x="265" y="108" text-anchor="middle" font-size="11" font-family="system-ui,sans-serif" fill="#6c757d">/api/fraud/score</text>
+
+                <line x1="330" y1="90" x2="385" y2="90" stroke="#6c757d" stroke-width="2" marker-end="url(#arrow)" />
+
+                <rect x="390" y="40" width="150" height="100" rx="12" fill="url(#boxGrad)" stroke="#fd7e14" stroke-width="2" />
+                <text x="465" y="88" text-anchor="middle" font-size="14" font-family="system-ui,sans-serif" fill="#212529">ML.NET</text>
+                <text x="465" y="108" text-anchor="middle" font-size="11" font-family="system-ui,sans-serif" fill="#6c757d">FastTree · metadata</text>
+
+                <line x1="540" y1="90" x2="595" y2="90" stroke="#6c757d" stroke-width="2" marker-end="url(#arrow)" />
+
+                <rect x="600" y="40" width="110" height="100" rx="12" fill="url(#boxGrad)" stroke="#dc3545" stroke-width="2" />
+                <text x="655" y="95" text-anchor="middle" font-size="14" font-family="system-ui,sans-serif" fill="#212529">Score +</text>
+                <text x="655" y="112" text-anchor="middle" font-size="12" font-family="system-ui,sans-serif" fill="#212529">explain</text>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small mb-0">
+    Tip: run <strong>ExplainableFraud.Api</strong> before using the scorer; configure <code>ApiBaseUrl</code> in appsettings if ports differ.
+</p>

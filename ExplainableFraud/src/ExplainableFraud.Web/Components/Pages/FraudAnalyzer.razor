@@ -4,22 +4,41 @@
 
 <PageTitle>Fraud score</PageTitle>
 
-<h1>Fraud score (demo)</h1>
-<p class="text-muted">
-    Server calls <code>@Http.BaseAddress</code> (<code>ApiBaseUrl</code> — in Development this is HTTP so local SSL trust is not required).
-    Run <strong>ExplainableFraud.Api</strong> first. Swagger UI: <code>http://localhost:5039/swagger</code> or <code>https://localhost:7088/swagger</code>.
+<h1 class="mb-2">Fraud score</h1>
+<p class="text-muted small mb-0">
+    API <code>@Http.BaseAddress</code> · run <strong>ExplainableFraud.Api</strong> first.
+    Uses ML.NET when <code>Models/fraud-model.zip</code> exists; otherwise the heuristic baseline.
+    See <a href="/">Home</a> for setup and <a href="visuals">Diagrams</a> for sample charts.
 </p>
 
 <EditForm Model="_form" OnValidSubmit="SubmitAsync" FormName="fraudScore">
-    <div class="mb-3">
-        <label class="form-label" for="amount">Amount</label>
-        <InputNumber class="form-control" id="amount" @bind-Value="_form.Amount" />
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label" for="amount">Amount</label>
+            <InputNumber class="form-control" id="amount" @bind-Value="_form.Amount" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="time">Time (seconds, Kaggle <em>Time</em> column)</label>
+            <InputNumber class="form-control" id="time" @bind-Value="_form.Time" />
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label" for="time">Time (seconds since reference)</label>
-        <InputNumber class="form-control" id="time" @bind-Value="_form.Time" />
+
+    <div class="mt-3">
+        <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="ToggleAdvanced">@(_showAdvanced ? "Hide" : "Show") V1–V28 (PCA) values</button>
     </div>
-    <button type="submit" class="btn btn-primary" disabled="@_busy">Score</button>
+
+    @if (_showAdvanced)
+    {
+        <div class="mt-2">
+            <label class="form-label" for="pca">Optional: 28 comma-separated values (V1…V28). Empty = zeros.</label>
+            <InputTextArea class="form-control font-monospace small" id="pca" rows="3" @bind-Value="_form.PrincipalComponentsText" placeholder="e.g. 1.2, -0.3, 0, ..." />
+            <div class="form-text">Layout matches the public Kaggle dataset (PCA features, not raw card fields).</div>
+        </div>
+    }
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary" disabled="@_busy">Score</button>
+    </div>
 </EditForm>
 
 @if (!string.IsNullOrEmpty(_error))
@@ -29,9 +48,9 @@
 
 @if (_result is not null)
 {
-    <div class="card mt-4">
+    <div class="card mt-4 shadow-sm">
         <div class="card-body">
-            <h2 class="h5">Result</h2>
+            <h2 class="h5 card-title">Result</h2>
             <dl class="row mb-0">
                 <dt class="col-sm-4">Fraud probability</dt>
                 <dd class="col-sm-8">@_result.FraudProbability.ToString("P2")</dd>
@@ -45,21 +64,45 @@
         </div>
     </div>
 
-    <h3 class="h6 mt-4">Feature contributions (normalized)</h3>
-    <table class="table table-sm">
-        <thead>
-            <tr><th>Feature</th><th class="text-end">Contribution</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var c in _result.FeatureContributions)
-            {
-                <tr>
-                    <td>@c.FeatureName</td>
-                    <td class="text-end">@c.Contribution.ToString("N3")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    @if (_result.ValidationMetrics is { } vm)
+    {
+        <div class="card mt-3 border-info shadow-sm">
+            <div class="card-body">
+                <h3 class="h6 card-title text-info">Validation (training hold-out)</h3>
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-4">ROC AUC</dt>
+                    <dd class="col-sm-8">@vm.AreaUnderRocCurve.ToString("F4")</dd>
+                    <dt class="col-sm-4">F1</dt>
+                    <dd class="col-sm-8">@vm.F1Score.ToString("F4")</dd>
+                    <dt class="col-sm-4">Train / test rows</dt>
+                    <dd class="col-sm-8">@vm.TrainRows / @vm.TestRows</dd>
+                </dl>
+            </div>
+        </div>
+    }
+
+    <h3 class="h6 mt-4">Explanations (approximate)</h3>
+    <p class="small text-muted mb-2">
+        Contributions combine global feature ranking (|Pearson r| vs fraud label on the train split) with how far each input deviates from training means (local emphasis).
+    </p>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr><th>Feature</th><th class="text-end">Relative emphasis</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in _result.FeatureContributions)
+                {
+                    <tr>
+                        <td>@c.FeatureName</td>
+                        <td class="text-end">
+                            <span class="d-inline-block rounded-pill bg-secondary bg-opacity-25 px-2">@c.Contribution.ToString("N3")</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
@@ -67,6 +110,9 @@
     private FraudScoreResponse? _result;
     private string? _error;
     private bool _busy;
+    private bool _showAdvanced;
+
+    private void ToggleAdvanced() => _showAdvanced = !_showAdvanced;
 
     private async Task SubmitAsync()
     {
@@ -75,10 +121,31 @@
         _result = null;
         try
         {
+            float[]? pcs = null;
+            var text = _form.PrincipalComponentsText?.Trim();
+            if (!string.IsNullOrEmpty(text))
+            {
+                var parts = text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (parts.Length > 0)
+                {
+                    pcs = new float[28];
+                    var n = Math.Min(parts.Length, 28);
+                    for (var i = 0; i < n; i++)
+                    {
+                        if (!float.TryParse(parts[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out pcs[i]))
+                        {
+                            _error = $"Invalid number at position {i + 1} in V1–V28 list.";
+                            return;
+                        }
+                    }
+                }
+            }
+
             var request = new FraudScoreRequest
             {
                 Amount = _form.Amount,
-                Time = _form.Time
+                Time = _form.Time,
+                PrincipalComponents = pcs
             };
 
             var response = await Http.PostAsJsonAsync("api/fraud/score", request).ConfigureAwait(false);
@@ -105,5 +172,6 @@
     {
         public float Amount { get; set; } = 100f;
         public float Time { get; set; } = 36_000f;
+        public string PrincipalComponentsText { get; set; } = "";
     }
 }

@@ -16,4 +16,10 @@
     <ProjectReference Include="..\ExplainableFraud.Contracts\ExplainableFraud.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Models\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -6,6 +6,7 @@
     <Project Path="src/ExplainableFraud.Domain/ExplainableFraud.Domain.csproj" />
     <Project Path="src/ExplainableFraud.Infrastructure/ExplainableFraud.Infrastructure.csproj" />
     <Project Path="src/ExplainableFraud.Web/ExplainableFraud.Web.csproj" />
+    <Project Path="src/ExplainableFraud.Training/ExplainableFraud.Training.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ExplainableFraud.UnitTests/ExplainableFraud.UnitTests.csproj" />

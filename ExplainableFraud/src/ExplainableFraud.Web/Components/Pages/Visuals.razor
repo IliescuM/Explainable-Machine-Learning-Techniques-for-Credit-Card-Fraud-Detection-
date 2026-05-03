@@ -1,0 +1,187 @@
+@page "/visuals"
+
+<PageTitle>Visuals · Fraud analytics</PageTitle>
+
+<div class="mb-4">
+    <h1 class="h2 mb-2">Diagrams &amp; heatmaps</h1>
+    <p class="text-muted mb-0">
+        Illustrative charts for documentation and slides—they use <strong>demo values</strong>, not live API responses.
+        Use <a href="fraud">Fraud score</a> for real model output and per-feature contributions.
+    </p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Conceptual confusion matrix</h2>
+                <p class="small text-muted">Normalized counts (illustrative). Training metrics in API metadata reflect real hold-out evaluation.</p>
+                <div class="cm-wrap mx-auto my-3">
+                    <div class="cm-grid">
+                        <div class="cm-cell cm-head"></div>
+                        <div class="cm-cell cm-head">Pred. legit</div>
+                        <div class="cm-cell cm-head">Pred. fraud</div>
+                        <div class="cm-cell cm-head">Actual legit</div>
+                        <div class="cm-cell cm-tn" title="True negative">0.94</div>
+                        <div class="cm-cell cm-fp" title="False positive">0.02</div>
+                        <div class="cm-cell cm-head">Actual fraud</div>
+                        <div class="cm-cell cm-fn" title="False negative">0.01</div>
+                        <div class="cm-cell cm-tp" title="True positive">0.03</div>
+                    </div>
+                </div>
+                <p class="small text-muted mb-0">Colour intensity encodes mass in each quadrant (TN / FP / FN / TP).</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h5 card-title">Risk vs. threshold (illustrative)</h2>
+                <p class="small text-muted">Example decay curve—tune <code>DecisionThreshold</code> in API config for real trade-offs.</p>
+                <div class="curve-chart mt-2">
+                    <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" class="w-100">
+                        <defs>
+                            <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#0d6efd" stop-opacity="0.35"/>
+                                <stop offset="100%" stop-color="#0d6efd" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="32" y="8" width="272" height="104" fill="#f8f9fa" rx="6" />
+                        <polyline fill="url(#curveFill)" stroke="none" points="@FillUnderCurve" />
+                        <polyline fill="none" stroke="#0d6efd" stroke-width="2.5" points="@CurveLine" />
+                        <text x="36" y="124" font-size="10" fill="#6c757d" font-family="system-ui,sans-serif">Decision threshold →</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body">
+        <h2 class="h5 card-title">PCA feature heatmap (synthetic)</h2>
+        <p class="small text-muted mb-3">
+            V1–V28 in a 4×7 grid. Saturation follows a smooth synthetic pattern to mimic uneven PCA importance across dimensions.
+        </p>
+        <div class="heatmap-scale small text-muted mb-2 d-flex align-items-center gap-2">
+            <span>Lower</span>
+            <span class="heatmap-gradient flex-grow-1 rounded-pill"></span>
+            <span>Higher</span>
+        </div>
+        <div class="heatmap-grid" role="img" aria-label="Heatmap of 28 PCA dimensions">
+            @for (var r = 0; r < 4; r++)
+            {
+                <div class="heatmap-row">
+                    @for (var c = 0; c < 7; c++)
+                    {
+                        var idx = r * 7 + c;
+                        if (idx >= 28)
+                        {
+                            break;
+                        }
+
+                        var v = HeatValues[idx];
+                        var pct = (int)Math.Clamp(v * 100, 0, 100);
+                        <div class="heatmap-cell rounded-1"
+                             style="@($"background:{HeatColor(pct)}")"
+                             title="@($"V{idx + 1}: relative weight ~{pct}%")">
+                            <span class="heatmap-label">V@(idx + 1)</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4 mb-5">
+    <div class="card-body">
+        <h2 class="h5 card-title">Bar ranking (synthetic top dimensions)</h2>
+        <p class="small text-muted mb-3">Same demo weights as the heatmap, sorted for a “top contributors” figure.</p>
+        <div class="bar-chart">
+            @foreach (var item in TopBars)
+            {
+                <div class="bar-row mb-2">
+                    <div class="bar-name small fw-semibold text-secondary">@item.Label</div>
+                    <div class="bar-track rounded-pill">
+                        <div class="bar-fill rounded-pill" style="@($"width:{item.Pct}%")"></div>
+                    </div>
+                    <div class="bar-val small text-muted">@item.Pct%</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private static readonly float[] HeatValues = CreateHeatValues();
+
+    private static float[] CreateHeatValues()
+    {
+        var arr = new float[28];
+        for (var i = 0; i < 28; i++)
+        {
+            var x = i * 0.42f;
+            arr[i] = MathF.Sin(x) * 0.35f + MathF.Cos(x * 0.7f) * 0.25f + 0.5f;
+            arr[i] = Math.Clamp(arr[i], 0f, 1f);
+        }
+
+        return arr;
+    }
+
+    private IEnumerable<(string Label, int Pct)> TopBars =>
+        HeatValues
+            .Select((v, i) => ($"V{i + 1}", (int)Math.Round(v * 100)))
+            .OrderByDescending(x => x.Item2)
+            .Take(8);
+
+    private static string HeatColor(int pct)
+    {
+        var l = (32 + pct * 0.35f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        return $"hsl(218, 82%, {l}%)";
+    }
+
+    private static string CurveLine
+    {
+        get
+        {
+            const int n = 24;
+            Span<char> buf = stackalloc char[640];
+            var pos = 0;
+            for (var i = 0; i <= n; i++)
+            {
+                var t = i / (float)n;
+                var x = 40 + t * 240;
+                var y = 100 - 75 * MathF.Pow(t, 1.8f);
+                if (pos > 0 && pos < buf.Length)
+                    buf[pos++] = ' ';
+                WriteNum(ref pos, buf, x);
+                if (pos < buf.Length)
+                    buf[pos++] = ',';
+                WriteNum(ref pos, buf, y);
+            }
+
+            return buf[..pos].ToString();
+        }
+    }
+
+    private static string FillUnderCurve
+    {
+        get
+        {
+            var top = CurveLine;
+            return $"40,100 {top} 280,100";
+        }
+    }
+
+    private static void WriteNum(ref int pos, Span<char> buf, float f)
+    {
+        var s = f.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        foreach (var ch in s)
+        {
+            if (pos < buf.Length)
+                buf[pos++] = ch;
+        }
+    }
+}

@@ -1,0 +1,118 @@
+.cm-wrap {
+    max-width: 280px;
+}
+
+.cm-grid {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    gap: 4px;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.cm-head {
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: #6c757d;
+    align-self: end;
+    padding-bottom: 4px;
+}
+
+.cm-cell:not(.cm-head) {
+    padding: 1rem 0.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.cm-tn {
+    background: linear-gradient(145deg, #198754, #146c43);
+}
+
+.cm-fp {
+    background: linear-gradient(145deg, #ffc107, #e0a800);
+    color: #212529 !important;
+}
+
+.cm-fn {
+    background: linear-gradient(145deg, #fd7e14, #ca6510);
+}
+
+.cm-tp {
+    background: linear-gradient(145deg, #dc3545, #b02a37);
+}
+
+.curve-chart svg {
+    max-height: 160px;
+}
+
+.heatmap-gradient {
+    height: 8px;
+    background: linear-gradient(90deg, #e7f1ff 0%, #0d6efd 50%, #6610f2 100%);
+}
+
+.heatmap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.heatmap-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.heatmap-cell {
+    flex: 1 1 calc(14.28% - 6px);
+    min-width: 52px;
+    min-height: 44px;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.05);
+    z-index: 1;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+}
+
+.heatmap-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.bar-chart {
+    max-width: 520px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 3rem 1fr 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bar-track {
+    height: 10px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6ea8fe, #0d6efd);
+}
+
+@media (max-width: 576px) {
+    .bar-row {
+        grid-template-columns: 2.5rem 1fr 2rem;
+    }
+}

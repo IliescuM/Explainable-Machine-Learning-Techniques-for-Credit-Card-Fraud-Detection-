@@ -30,3 +30,9 @@
 # OS
 Thumbs.db
 Desktop.ini
+
+# Trained ML artifacts (generate with ExplainableFraud.Training; copy into Api/Models)
+ExplainableFraud/src/ExplainableFraud.Api/Models/*.zip
+ExplainableFraud/src/ExplainableFraud.Api/Models/*-metadata.json
+**/artifacts/
+**/creditcard.csv
