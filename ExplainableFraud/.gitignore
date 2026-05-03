@@ -1,0 +1,22 @@
+# Build
+**/bin/
+**/obj/
+**/out/
+
+# IDE / tooling
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Logs / diagnostics
+*.log
+**/TestResults/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# NuGet lock (optional — remove if you version lock files)
+**/packages.lock.json
