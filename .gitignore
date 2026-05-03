@@ -1,0 +1,29 @@
+# .NET / tooling (matches ExplainableFraud/.gitignore patterns repo-wide)
+**/bin/
+**/obj/
+**/out/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.log
+**/TestResults/
+**/packages.lock.json
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.xdv
+
+# OS
+Thumbs.db
+Desktop.ini
