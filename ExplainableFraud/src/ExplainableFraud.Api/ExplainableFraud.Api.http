@@ -1,0 +1,15 @@
+@ExplainableFraud.Api_HostAddress = https://localhost:7088
+
+### Swagger UI (browser): https://localhost:7088/swagger  |  HTTP: http://localhost:5039/swagger
+
+### Score transaction (minimal body)
+POST {{ExplainableFraud.Api_HostAddress}}/api/fraud/score
+Content-Type: application/json
+
+{
+  "amount": 150.5,
+  "time": 36000,
+  "principalComponents": null
+}
+
+###
