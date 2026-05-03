@@ -31,6 +31,9 @@
 Thumbs.db
 Desktop.ini
 
+# Cursor IDE (local; never push skills/rules from this folder)
+.cursor/
+
 # Trained ML artifacts (generate with ExplainableFraud.Training; copy into Api/Models)
 ExplainableFraud/src/ExplainableFraud.Api/Models/*.zip
 ExplainableFraud/src/ExplainableFraud.Api/Models/*-metadata.json
