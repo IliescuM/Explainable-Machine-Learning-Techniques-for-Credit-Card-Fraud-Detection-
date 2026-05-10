@@ -1,0 +1,46 @@
+<div class="card mt-4 shadow-sm risk-summary-card @RiskClass">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+            <div>
+                <p class="text-uppercase text-muted small fw-semibold mb-1">Decision support result</p>
+                <h2 class="h5 card-title mb-2">@Verdict</h2>
+                <p class="small text-muted mb-0">
+                    The score is compared with the configured decision threshold. Treat it as analyst support, not an automatic decision.
+                </p>
+            </div>
+            <span class="badge rounded-pill @BadgeClass">@Result.FraudProbability.ToString("P2")</span>
+        </div>
+
+        <dl class="row small mt-3 mb-0">
+            <dt class="col-sm-4">Threshold</dt>
+            <dd class="col-sm-8">@Result.DecisionThreshold.ToString("P2")</dd>
+            <dt class="col-sm-4">Likely fraud</dt>
+            <dd class="col-sm-8">@((Result.IsFraudLikely ? "Yes" : "No"))</dd>
+            <dt class="col-sm-4">Model</dt>
+            <dd class="col-sm-8"><code>@Result.ModelVersion</code></dd>
+            <dt class="col-sm-4">Explanation method</dt>
+            <dd class="col-sm-8">@FormatMethod(Result.ExplanationMethod)</dd>
+        </dl>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required FraudScoreResponse Result { get; set; }
+
+    private string Verdict => Result.IsFraudLikely
+        ? "Transaction should be reviewed"
+        : "Transaction is below the review threshold";
+
+    private string RiskClass => Result.IsFraudLikely ? "risk-summary-card-high" : "risk-summary-card-low";
+
+    private string BadgeClass => Result.IsFraudLikely ? "text-bg-danger" : "text-bg-success";
+
+    private static string FormatMethod(ExplanationMethod method) =>
+        method switch
+        {
+            ExplanationMethod.HeuristicWeights => "Heuristic weights",
+            ExplanationMethod.MetadataWeightedDeviation => "Metadata-weighted deviation",
+            _ => "Unknown"
+        };
+}

@@ -1,0 +1,75 @@
+\chapter{Notation, symbols, and glossary}
+
+\section{Probability and decision variables}
+\begin{description}
+\item[$x$] Feature vector describing a transactional observation after preprocessing commits a fixed dimensionality $d$.
+\item[$\hat{y}$] Real-valued output of a trained classifier constrained to $[0,1]$ within this dissertation's implementation; interpreted either as an estimated Bernoulli parameter when calibration evidence exists or as an ordinal ranking score otherwise.
+\item[$\tau$] Decision threshold partitioning scores into escalate versus continue automated handling policies.
+\item[$y\in\{0,1\}$] Latent supervisory label indicating observed fraud adjudication conventions; imperfections in label derivation constitute measurement error orthogonal to optimisation noise.
+\item[$\theta$] Learned parameter bundle serialised alongside preprocessing graphs in ML artefacts.
+\item[$f_\theta$] Parametrised predictor mapping $\mathcal{X}$ into scores; synonyms include \emph{classifier}, \emph{scorer}, and \emph{engine} depending on layering context.
+\end{description}
+
+\section{Confusion matrix derived quantities}
+Let $TP,FP,TN,FN$ abbreviate contingency counts at threshold $\tau$. Precision, recall, harmonic $F_1$, ROC-AUC, and average precision (AP) derive from ordered score ties as standard references detail \cite{fraud_handbook}. When texts reference PR-AUC, they denote area under precision--recall curves summarising alert-economics geometry.
+
+\section{Explainability artefacts}
+\begin{description}
+\item[$e(x)$] Vector of nonnegative influence weights normalised post hoc for dashboards; lacks Shapley efficiency unless axiomatic constructions explicitly enforce it \cite{xai_survey}.
+\item[LIME surrogate] Interpretable locally weighted map $g$ approximating $f_\theta$ inside neighbourhood $\nu$ \cite{lime_original}.
+\item[SHAP values] Cooperative-game attributions redistributing prediction deviations relative to baseline expectations \cite{shap_original}.
+\end{description}
+
+\section{Operational lexicon mapping}
+\textbf{Decision support versus adjudication}: UI language intentionally references \emph{review hints} rather than irrevocable declines to reflect institutional separation between model scores and authoritative human or policy outcomes \cite{fraud_handbook}. \textbf{Model lineage}: alphanumeric identifiers bundle training hashes, timestamps, or release tags depending on toolchain exports. \textbf{Heuristic baseline}: deterministic placeholder pathway enabling engineering smoke tests devoid of calibrated fraud likelihood.
+
+\section*{Bridging ROC calculus notation}
+Assume scorer ranks negatives sufficiently cleanly relative to positives such that ROC curve plots true positive rate versus false positive rate parameterised by $\tau$. Its integrated area expresses probability that a uniformly drawn pair ($y{=}1$, $y{=}0$) adopts correct ordering—a quantity statistically distinct from posterior reliability discussed elsewhere \cite{davis_goadrich_icml06}.
+
+Precision--recall formulations emphasise denominators inflated by imbalance; mapping confusion matrices elementwise exposes invertible—but visually misleading—translations between ROC dominance statements and precision dominance statements absent prevalence awareness \cite{davis_goadrich_icml06}.
+
+\section*{Conceptual glossary (English)}
+\textbf{Leakage}: information from validation or testing horizons improperly enters training artefacts; temporal leakage emerges when aggregates fold future timestamps into supposedly historical summaries \cite{fraud_handbook}. \textbf{Synthetic minority augmentation}: algorithms fabricate minority exemplars preserving label balance heuristically; distort covariances unless tuned carefully \cite{he_garcia_imbalanced2009}. \textbf{Calibration}: empirical alignment between predicted probabilities and realised outcome frequencies conditional on segmentation bins \cite{niculescu_caruana_calib2005}.
+
+\textbf{Faithfulness}: local descriptive accuracy relating explanation outputs to functional behaviour $f_\theta$, distinct from causal legitimacy \cite{xai_survey}. \textbf{Stability}: qualitative insensitivity (or measurable Lipschitz moderation) under small admissible input perturbations; brittle explanations oscillate wildly across neighbouring transactions \cite{xai_survey}.
+
+\section*{Abbreviations}
+ROC (receiver operating characteristic); PR (precision--recall); AP (average precision); AUC (area under curve); GBDT (gradient-boosted decision trees); AML (anti-money laundering); PSD2 (EU revised Payment Services Directive---referenced contextually alongside GDPR debates without exhaustive legal commentary); PSP (payment service provider); SLA (service-level agreement); CI/CD (continuous integration \& deployment telemetry cadences influencing reproducibility timelines).
+
+\chapter{Sketch: cost-sensitive thresholds and alert economics}
+This appendix refines threshold intuition without substituting institution-specific loss accounting. Let $c_{FP}$ denote expected economic detriment from investigating a false alert (analyst minutes, customer friction, reputational drag), and $c_{FN}$ expected detriment from missing fraud (chargebacks, regulatory fines, network exclusion). For a fixed score distribution, any cutoff $\tau$ induces an expected cost
+\begin{equation}
+\mathbb{E}[\text{Cost} \mid \tau]
+= c_{FP}\cdot FP(\tau) + c_{FN}\cdot FN(\tau),
+\end{equation}
+where $FP(\tau)$ and $FN(\tau)$ count misclassifications at that threshold. Minimising the expression is a one-dimensional search amenable to grid evaluation whenever validation sets supply reliable confusion trajectories \cite{fraud_handbook}. When $c_{FN} \gg c_{FP}$—a stylised fraud regime—optima skew toward lower $\tau$, echoing recall-sensitive policies, whereas consumer-protection motivations inflating $c_{FP}$ pull $\tau$ upward, echoing precision-focused triage.
+
+\textbf{Alert budget coupling.} Analyst teams process finite daily reviews $B$. Constrained optimisation adds a Lagrange multiplier or solves for the largest $\tau$ such that alert volume remains below $B$ while recall stays above board-mandated floors. Chapter~5's threshold discussion operationalises this narrative qualitatively; numeric schedules belong to proprietary staffing models absent here.
+
+\textbf{Limitations.} Plug-in costs rely on noisy estimates; adversarial fraud shifts costs dynamically; multi-objective stakeholders (Legal, Operations, Marketing) may disagree on $c_{FP},c_{FN}$ magnitudes. Treat the sketch as orienting algebra consistent with RQ1 rather than prescriptive enterprise accounting.
+
+\chapter{Robustness heuristics for explanation QA}
+Without human-subject experiments, teams may still apply algorithmic heuristics to explanation outputs \cite{xai_survey}:
+\begin{itemize}
+    \item \textbf{Neighbourhood fidelity tests:} compare explanation-based linear surrogates against non-linear scores on Monte Carlo balls around $x$.
+    \item \textbf{Sign consistency:} verify that contributions align with partial dependence directionality for monotone features when monotonicity is architecturally enforced.
+    \item \textbf{Mask ablation:} zero high-contribution inputs within admissible bounds and confirm expected score movement; large violations signal unstable masks.
+    \item \textbf{Cross-model agreement:} when multiple models agree on top drivers, confidence increases—disagreement flags need for conservatism.
+\end{itemize}
+None of these procedures establish causality; they supply triage filters compatible with audit sampling budgets.
+
+\chapter{Documentation patterns for datasets and model cards}
+Reproducibility extends beyond published PDFs to machine-readable documentation. Model cards and dataset sheets—now common in responsible-AI practice—recommend disclosing intended use, out-of-scope deployments, evaluation slices, and fairness caveats \cite{xai_survey}. Fraud-specific analogues should enumerate:
+\begin{enumerate}
+    \item \textbf{Temporal footprint:} earliest and latest transactional timestamps ingested, blackout windows, embargoed accounts.
+    \item \textbf{Label pipeline:} adjudication latency, partial relabelling rules, class rebasing after chargeback reversals.
+    \item \textbf{Sampling filters:} exclusions (test merchants, staff cards) with statistical impact on prevalence.
+    \item \textbf{Feature inventory:} hashing of schema versions, deprecation logs, sensitive attribute flags.
+    \item \textbf{Risk tiering:} who may access raw versus anonymised copies under least-privilege policies \cite{gdpr_text,fraud_handbook}.
+\end{enumerate}
+ExplainableFraud ships lean JSON metadata fields foreshadowing fuller cards; exploratory training-API payloads (\texttt{Training\allowbreak Job\allowbreak Dto}, nested \texttt{Model\allowbreak Validation\allowbreak Metrics\allowbreak Dto}) carry similar disclosure DNA (row counts, trainer labels, data-source summaries) even when jobs stop short of disk publication. Graduate work may expand them into supervisory submission appendices when institutions permit.
+
+\chapter{Closing methodological exhortation}
+The dissertation threads statistical learning, interpretability epistemology, and compliance discourse into a single argumentative fabric. Appendices here cannot exhaust operational checklists—rather, they invite practitioners to treat methodological transparency as iterative maintenance: each redeployed model cycle reopens questions of calibration, attribution stability, and evaluator trust. Sustained dialogues between investigative teams and quantitative researchers transform abstract RQ1--RQ3 formulations into living governance practice; static PDFs remain necessary but insufficient witnesses to that transformation \cite{fraud_handbook,lucas_jurgovsky_ccfraud_survey2020}.
+
+Junior researchers replicating this work should preserve laboratory notebooks or commit histories as instinctively as preserving LaTeX sources: future-you (and external auditors) will reconstruct \emph{why} a threshold moved more easily from dated logs than from polished figures alone. That habit formation—linking quantitative shifts to documented reasoning—constitutes the transferable craft this dissertation ultimately advocates.

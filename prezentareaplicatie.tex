@@ -9,23 +9,54 @@ Whereas methodological substance was formalised algebraically in Chapter~3, this
 \end{enumerate}
 Observed numerical outcomes should be interpreted as \emph{cases} illuminating theoretical claims rather than exhaustive industrial certification.
 
+\section{Demonstration Scope versus Methodological Generality}
+This chapter occupies an intermediate epistemic role. On one side stand the abstract contracts of Chapter~3—stochastic classifiers, threshold policies, attribution interfaces—which apply in principle to any institution that logs structured transactional predictors and labels. On the other side stands the concrete artefact evaluated here: a reproducible train--score loop fitted to a \emph{single} public benchmark whose features are deliberately anonymised and whose labels reflect a particular acquirer’s historical adjudication policy. The gap between those two sides is not a implementation detail; it delimits what may be inferred from tables and case studies below.
+
+Handbook-oriented treatments of credit-card fraud analytics stress that scientific credibility comes from disciplined pipelines (data versioning, explicit leakage controls, imbalance-aware metrics, and traceable model lineage) rather than from any one algorithmic brand \cite{fraud_handbook}. The present work adopts that standard \emph{rhetorically}—fixed splits, declarative preprocessing, paired metric reporting—even though the operational envelope is consciously reduced relative to tier-one payment processors (no multi-country routing meshes, no real-time rule cascades layered ahead of learners, no analyst-in-the-loop telemetry beyond what the demonstration UI sketches).
+
+Survey literature on machine-learning fraud detection repeatedly notes that empirical papers cluster around a handful of public corpora whose variables lack operational semantics---for example PCA-compressed coordinates masking merchant identity, geography, or device graphs---while production systems fuse heterogeneous signals under strict latency budgets \cite{lucas_jurgovsky_ccfraud_survey2020,fraud_handbook}. Comparative surveys likewise emphasise that reported offline gains become fragile once fraud rings react to detectors, inducing covariate and prior shift that retrospective benchmarks seldom replay \cite{lucas_jurgovsky_ccfraud_survey2020,yousefi_fraud_survey2019}. Consequently, the numerical rows in Table~\ref{tab:model-comparison} instantiate \emph{internal validity} (do the artefacts behave as mathematics predicts under a frozen snapshot?) rather than \emph{external validity} (would identical rankings survive next quarter’s attack mix?).
+
+In short, demonstration serves theory: ROC and PR geometries, threshold-mediated precision--recall trade-offs, and explanation readability are exercised on controlled inputs \cite{davis_goadrich_icml06,fraud_handbook}. General claims about industrial deployment strength, supervisory acceptance, or long-run alert economics require evidence outside this corpus and are deliberately not overstated here.
+
 \section{Dataset Schema and Confidentiality Constraints}
 Public fraud corpora routinely publish anonymised PCA coordinates instead of semantic entity descriptors \cite{credit_card_dataset,fraud_handbook}; consequently variables $v_\ell$ lack direct lexical mapping to merchants or cardholders, yet statistical dependence structures remain scientifically informative.
 
 Experiments emulate canonical ULB preprocessing: raw CSV rows represent independent transactions labelled by latent fraud adjudication protocols. Temporal stratification assumptions should be audited before claiming deployment readiness; leakage across sliding windows materially inflates retrospective metrics absent careful bookkeeping.
 
+Two confidentiality caveats recur in fraud corpora anonymised via PCA rotations. First, reconstructed semantics (merchant identity, geography, acquirer risk tier) remain deliberately opaque—only distributional footprints survive—so causal narratives referencing concrete entities cannot be adjudicated solely from empirical rows. Second, label provenance merges proprietary rule outcomes and disputed chargebacks into a brittle binary surrogate; disagreement among investigators or retrospective relabelling induces measurement error on top of customary class imbalance difficulties \cite{fraud_handbook,lucas_jurgovsky_ccfraud_survey2020}.
+
+\section{Bridging offline evaluation with the ExplainableFraud artefact}
+Chapter~4 showcased how evaluation artefacts (threshold selections, optionally embedded validation summaries) propagate into interactive displays, and---through Section~\ref{sec:training-surface}---how exploratory training jobs optionally render hold-out ROC/PR/$F_{1}$, confusion counts, durations, dataset provenance captions, trainer labels, row tallies \emph{during experimentation}. Interpretive coherence demands that empirical tables in the present chapter be read as authoritative for numerical claims whenever peer-reviewed narration quotes scalars---while dashboards document \emph{display contracts} instantiated by whichever model bundle or transient job snapshot the operator invoked. When Table~\ref{tab:model-comparison} fills in trained metrics, exported JSON backing production scoring (\texttt{fraud-model-metadata.json}) ought to synchronize with \texttt{Validation\-Metrics\-Card} on \texttt{/fraud}; parallel UI runs on \texttt{/training} inherit the same honest-reporting obligations but remain logically separate until artefacts are promoted to disk-backed scoring services. Desynchronisation would constitute a methodological defect rather than a cosmetic mismatch. Conversely, the artefact's \texttt{/fraud} overlay implements the metadata-weighted deviation interface formalised in Chapter~3 (normalised mask $e_i(x)$) and \emph{does not} instantiate LIME neighbourhoods or Shapley coalition games at inference time. Empirical claims about LIME/SHAP fidelity therefore remain theoretical/comparative unless different explainers are swapped in with explicit versioning. The division of labour mirrors standard practice in mixed-methods dissertations: quantitative chapters justify predictive behaviour, companion software chapters articulate operational affordances subject to caveat lists \cite{slack2020_fooling_lime_shap,doshi_velez_kim_interpretability_2017}.
+
 \section{Experimental Setup and Evaluation Protocol}
-To ensure that model performance claims are reproducible and academically defensible, the evaluation process follows a fixed protocol. The dataset is partitioned into training, validation, and test subsets using temporal constraints where possible, in order to avoid information leakage from future transactions into historical training data. All preprocessing steps applied during training are serialized and reused during inference.
+This chapter closes the loop with a reproducible checkpoint executed through the ExplainableFraud API's in-process ML.NET trainer surfaced on \texttt{/training} rather than through an external notebook stack. The observable protocol is:
+\begin{itemize}
+    \item \textbf{Cohort.} The comma-separated archive \texttt{creditcard.csv} at the repository root (Kaggle/ULB redistribution) is ingested offline whenever path discovery succeeds---$284\,807$ parsed transaction rows with $492$ labelled fraud positives and $284\,315$ negatives, matching the handbook's reference cardinality \cite{fraud_handbook,credit_card_dataset,kaggle_creditcard_ulb}.
+    \item \textbf{Splitting.} Rows are partitioned with a \emph{stratified $70/15/15$ train/validation/test scheme}: within each class, rows are shuffled with a pseudo-random seed derived from each job identifier (not a timestamp-ordered deployment split). This honours the UI's anti-leak goal for static archives while \emph{remaining optimistic} relative to strict temporal holdouts recommended for production ledgers \cite{fraud_handbook}. Validation rows are materialised for bookkeeping but the reported metrics below come from the withheld \emph{test} fold as emitted by \texttt{EvaluateNonCalibrated}.
+    \item \textbf{Trainer families.} FastTree gradient boosting (ninety-six trees, forty-eight leaves, unbalanced-set aware) supplies the thesis checkpoint stored in \texttt{thesis-training-snapshot.json}; LBFGS logistic regression with min--max normalisation provides a linear contrast trained under the \emph{same} code path yet a different job identifier, hence a different stratified shuffle (see narrative under Table~\ref{tab:model-comparison}).
+    \item \textbf{Explainability.} Scoring-time attributions continue to use global importance weighting with normalised $z$-style deviations (\texttt{MetadataWeightedDeviation}), not LIME/SHAP surrogates.
+\end{itemize}
 
-Given the imbalanced nature of fraud detection, model quality is assessed using metrics that reflect both detection power and operational impact. In addition to precision and recall, the evaluation includes F1-score and precision-recall area under curve (PR-AUC), because these measures are more informative than accuracy in highly skewed class distributions \cite{fraud_handbook}. Threshold analysis is performed to identify the operating point that balances fraud capture with analyst workload.
+Given the imbalanced nature of fraud detection, summaries foreground precision, recall, $F_{1}$, ROC-AUC \emph{and} PR-AUC/ average precision, because PR geometry stresses false-positive inflation at rare-prevalence operating points \cite{davis_goadrich_icml06,fraud_handbook}. Accuracy is reported for completeness yet subordinated narratively.
 
-The baseline comparison includes at least one simple model (for example, logistic regression) and one strong non-linear model (for example, gradient boosting). This comparative design supports a credible argument that final model selection is driven by evidence rather than by implementation convenience.
+\subsection{Splits, bookkeeping, and anti-leak discipline}
+\textbf{Temporal ordering.} The ULB corpus's \texttt{Time} column measures seconds between transactions but the reference demo does \emph{not} enforce monotone temporal splits; handbook guidance still recommends time-forward validation whenever institutions can align labels with calendar ordering \cite{fraud_handbook}. The numbers in Table~\ref{tab:model-comparison} therefore measure \emph{interpolation} quality on a stratified snapshot rather than prospective drift resistance.
+
+\textbf{Preprocessor serialisation.} Tree runs concatenate \texttt{Time}, \texttt{V1}--\texttt{V28}, \texttt{Amount} without additional normalisation; logistic runs append min--max scaling as implemented in code. Production scoring should continue to load the zipped pipeline exported by the batch CLI when analysts promote models beyond the in-memory demo jobs.
+
+\textbf{Traceability.} JSON transcript \texttt{thesis-training-snapshot.json} in the dissertation repository records job \texttt{7437fe88-82d9-4606-8c16-0fffbd21d6a7}, including label histograms, durations, and evaluator outputs; readers should treat that file as the authoritative scalar source (screen captures may originate from adjacent successful runs with different Guids).
+
+\subsection{Reward functions aligned with asymmetric costs}
+Model selection should not optimise accuracy alone; instead validation scores combine PR-AUC, recall at workable precision regimes, uplift at fixed alert budgets, or cost-sensitive reductions when reliable $c_{FP},c_{FN}$ estimates exist. Threshold selection extends the optimisation: sweeping $\tau$ while recording alert yield operationalises Question~RQ1 empirically. Documenting sensitivity curves—even if smoothed summaries rather than exhaustive tables—adds argumentative weight beyond quoting single-score scalars.
 
 \section{Evaluation Metrics}
 Let $TP$, $FP$, $TN$, and $FN$ denote true positives, false positives, true negatives, and false negatives, respectively. Canonical definitions follow:
 \begin{equation}
-\text{Precision} = \frac{TP}{TP + FP},\qquad \text{Recall} = \frac{TP}{TP + FN},\qquad
-F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} .
+\begin{aligned}
+\text{Precision} &= \frac{TP}{TP + FP},\quad
+\text{Recall} = \frac{TP}{TP + FN},\\
+F_1 &= 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} .
+\end{aligned}
 \end{equation}
 ROC-AUC measures ranking quality across negatives and positives irrespective of prevalence; denote it $\mathrm{AUC}_{\mathrm{ROC}}$.
 \begin{equation}
@@ -35,86 +66,114 @@ Average precision aggregates precision--recall operating points analogous to dis
 
 Precision encodes investigative purity; recall expresses fraud containment. Institutional utility demands joint satisfaction under budgeted alert volume; thus threshold sweeps annotate metric surfaces referenced below.
 
-\section{Result Reporting Template}
-The final dissertation should report results in a compact, reproducible format. Table~\ref{tab:model-comparison} provides the structure used to summarize model performance.
+\subsection{Worked micro-example illustrating asymmetry (\emph{toy arithmetic})}
+Consider a microscopic ledger with twenty transactions where exactly one fraudulent event exists (prevalence $5\%$, still far more generous than live streams yet sufficient for intuition). Suppose a classifier attains modest recall $\text{Recall}=0{,}70$ yet precision collapses because false positives overwhelm investigators: even if ROC-AUC remains respectable through strong ranking among negatives near the frontier, analysts experience precision well below managerial tolerances—a scenario PR diagnostics expose immediately whereas accuracy might remain near ninety percent \cite{fraud_handbook,davis_goadrich_icml06}. This stylised tableau motivates reporting both ROC and precision--recall summaries rather than collapsing performance into a solitary headline figure.
+
+Readers should resist inferring universally optimal trade-offs from the toy arithmetic; subsequent Sections in this empirical chapter contextualise analogous trade-offs whenever measured corpus statistics become available. Nonetheless, pedagogical anecdotes anchor RQ1 in operational vocabulary familiar to supervisory audiences.
+
+\section{Primary empirical checkpoint}
+Table~\ref{tab:model-comparison} records the first dissertation-grade comparison on the observational CSV surfaced by ExplainableFraud's training API. Rows are \emph{not} cross-validated means; each invocation samples a fresh stratified partition because the demo seed mixes the job Guid enumerated in Chapter~4 (\path{/training}, API \texttt{POST /api/training/jobs}). PR-AUC favours the nonlinear tree model at this realisation even though ROC-AUC temporarily favours logistic regression---illustrating why fraud teams reference both geometries \cite{davis_goadrich_icml06}.
 
 \begin{table}[htbp]
 \centering
-\small
-\setlength{\tabcolsep}{6pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}Xcccc}
+{\footnotesize\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.15}%
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{PR-AUC} \\
+\textbf{Model} & \textbf{Prec.} & \textbf{Rec.} & \textbf{$F_{1}$} & \textbf{PR-AUC} & \textbf{ROC-AUC} & \textbf{Acc.} \\
 \midrule
-Logistic Regression (baseline) & to be reported & to be reported & to be reported & to be reported \\
-FastTree / Gradient Boosting & to be reported & to be reported & to be reported & to be reported \\
-Selected Final Model & to be reported & to be reported & to be reported & to be reported \\
+LBFGS logistic (min--max + linear) & $0{,}9130$ & $0{,}5600$ & $0{,}6942$ & $0{,}7755$ & $0{,}9792$ & $0{,}9991$ \\
+FastTree ($96\!\times\!48$ leaves, unbalanced) & $0{,}6600$ & $0{,}8800$ & $0{,}7543$ & $0{,}7900$ & $0{,}9611$ & $0{,}9990$ \\
 \bottomrule
-\end{tabularx}
-\caption{Model comparison on held-out test data.}
+\end{tabular}}}
+\caption{Hold-out metrics on the stratified $15\%$ test fold ($42\,723$ rows: $75$ fraud / $42\,648$ legitimate) after fitting on $199\,364$ training rows. FastTree scalars replicate \texttt{thesis-training-snapshot.json}; LBFGS row replicates \texttt{thesis-logistic-snapshot.json} (distinct shuffle).}
 \label{tab:model-comparison}
 \end{table}
 
-In addition to aggregate metrics, transaction-level explanation case studies should be included. For each representative case, the report should provide: the predicted probability, top positive contributors, top negative contributors, and the analyst decision taken after reviewing the explanation. This presentation links model behavior to actual operational reasoning.
+\noindent\textbf{Confusion masses (FastTree, test fold).} Using API-exported counts after a label-indexing correction shipped with the repository build, the withheld fold yields $TP{=}66$, $FN{=}9$, $FP{=}34$, $TN{=}42\,614$. These figures align with the PositivePrecision/Recall fields in the JSON transcript and ground the discussion in Section~\ref{sec:interpret-performance} without substituting for production monitoring.
+
+Explanation case studies remain intentionally lightweight: the UI lists ranked contributors for any scored vector, but qualitative analyst decisions were not collected in the experiment window. Future user studies would need structured interviews to connect \texttt{MetadataWeightedDeviation} emphasis to investigative actions.
 
 \section{Results and Discussion}
-This section interprets empirical outcomes relative to methodological objectives linking predictive separation, asymmetric costs, and defensible explanatory narratives. The quantitative narrative should be completed only with measured values obtained from the final experiments.
+\label{sec:interpret-performance}
 
-\subsection{Predictive Performance Interpretation}
-Using Table~\ref{tab:model-comparison}, the first discussion point should compare the baseline model against the selected final model. If the final model improves recall while maintaining acceptable precision, this indicates better fraud capture without an unmanageable increase in false alerts. If precision improves at similar recall levels, the model is likely reducing analyst workload while preserving detection coverage.
+\subsection{Predictive separation at the withheld fold}
+Relative to LBFGS at the logistic realisation archived in \texttt{thesis-logistic-snapshot.json}, FastTree (Table~\ref{tab:model-comparison}) achieves higher recall on fraud positives $(0{,}88$ vs.\ $0{,}56)$ while sacrificing precision $(0{,}66$ vs.\ $0{,}91)$. PR-AUC marginally favours the tree ensemble $(0{,}7900$ vs.\ $0{,}7755)$ even though ROC-AUC ranks the logistic run higher---highlighting asymmetric behaviour under rarity \cite{davis_goadrich_icml06}. Institutions would typically calibrate thresholds on the withheld validation slice rather than deploying either column verbatim \cite{fraud_handbook}. Because each exported job uses another Guid-derived shuffle, differences are illustrative rather than statistically stabilised without repeated jobs.
 
-The dissertation should explicitly report absolute differences between models. For example:
+\subsection{Runtime and engineering observations}
+The archived FastTree job fit the ensemble in $2{,}373\,\mathrm{ms}$ of ML.NET \texttt{Fit} time and $4{,}501\,\mathrm{ms}$ overall API-reported wall time including synthetic UI pacing delays; logistic training finished in sub-second \texttt{Fit} time on the same hardware class. These magnitudes confirm interactively launched jobs remain viable for classroom demonstrations yet do not speak to distributed training stacks.
+
+\subsection{Calibration and probability language}
+The evaluator path calls \texttt{EvaluateNonCalibrated}; tree scores should therefore be treated primarily as ranking surrogates unless a dedicated calibration stage is added \cite{niculescu_caruana_calib2005,molnarInterpretableMachineLearningBook}. The dissertation UI still displays values in $[0,1]$ for continuity with banking discourse, but Chapter~6 reiterates the distinction between ordinal scores and calibrated frequencies.
+
+\subsection{Explainability utility}
+Local explanation case studies with human analysts remain future work. The production of ranked contributions via \texttt{MetadataWeightedDeviation} answers RQ2 at the level of \emph{interface contracts}, not user-trust experiments \cite{doshi_velez_kim_interpretability_2017}. Adversarial critiques of LIME/SHAP reinforce why the manuscript avoids equating the shipped mask with those families \cite{slack2020_fooling_lime_shap}.
+
+\subsection{Governance hooks}
+Model inventory expectations articulated in the EU AI Act and parallel internal policies encourage traceable documentation \cite{eu_ai_act2024,mitchell2019model_cards,gebru2021datasheets}. The JSON transcript, screenshot on \texttt{/training}, and version-controlled trainer settings collectively provide a minimal disclosure package for the thesis artifact.
+
+\subsection{Limitations of reported results}
+Results hinge on a static, heavily imbalanced European card archive with PCA-masked features \cite{credit_card_dataset,fraud_handbook}. There is no guarantee that the favouring of FastTree at this PR-AUC snapshot persists under temporal splits, entity-aware resampling, or alternative fraud typologies. Each limitation strengthens the case for treating Table~\ref{tab:model-comparison} as an internal validity checkpoint rather than an industry benchmark.
+
+\section{Explainability evaluation beyond predictive metrics}
+Popular explainability tooling supplies attractive visual summaries yet rarely ships with turnkey statistical tests of faithfulness under fraud-specific stressors. Scholarly discourse therefore distinguishes diagnostic evaluation (approximation error vs surrogate models, fidelity on synthetic perturbations), functional evaluation (impact on simulated analyst decisions under controlled labs), and user-centred evaluation (think-aloud protocols, trust scales) \cite{guidotti_blackbox_survey2018,xai_survey}. The present dissertation concentrates on methodological positioning and illustrative masks without claiming completion of exhaustive human-factors experimentation.
+
+\textbf{Faithfulness probes.} For local surrogates such as LIME, analysts may measure $\mathbb{E}_{z \sim \nu}[(f_\theta(z)-g(z))^2]$ on withheld perturbations—not on training neighbourhoods—to gauge brittleness. For additive attribution families, deviations from baseline integration identities flag inconsistent coalition definitions. Comparable quantitative diagnostics are postponed when industrial APIs restrict batched perturbation calls; transparency about such constraints strengthens rather than weakens manuscripts.
+
+\textbf{Stability under perturbations.} Fraud actors intentionally nudge transactional predictors across decision boundaries \cite{lucas_jurgovsky_ccfraud_survey2020}; explanation vectors need not—and often do not—vary continuously. Measuring Jacobian norms or cosine similarity distributions between explanations of $x$ and $x'$ quantifies instability when budgets permit.
+
+\textbf{Alignment with investigations.} Structured case ledgers (scores, ranked contributors, investigative outcome) remain the gold standard for aligning attributions with analyst heuristics \cite{doshi_velez_kim_interpretability_2017}. Absent such studies here, discussion stays at the level of software affordances plus theoretical caveats.
+
+\section{Threats to validity and mitigations}
+Threat analysis follows the classical quasi-experiment typology distinguishing internal validity (faithfulness inside the sampled snapshot), external validity (generalisation beyond the corpus), construct validity (alignment between metrics/explanations and theoretical quantities), and conclusion validity (statistical artefacts of estimation) \cite{fraud_handbook,xai_survey}. These lenses structure the following subsections; they do not exhaust supervisory risk registers but anchor academic caution.
+
+\subsection{Internal validity}
 \begin{itemize}
-    \item Precision improvement: $[P_{\text{final}} - P_{\text{baseline}}]$.
-    \item Recall improvement: $[R_{\text{final}} - R_{\text{baseline}}]$.
-    \item F1-score improvement: $[F1_{\text{final}} - F1_{\text{baseline}}]$.
+    \item \textbf{Data leakage through preprocessing.} Improper shuffles, duplicated cardholders, or future-aware aggregations contaminate train/test partitions; mitigations include monotone time splits, entity-level deduplication, and pipeline serialisation checks.
+    \item \textbf{Optimistic model selection.} Repeatedly tuning on the same validation fold without nested procedures inflates reported PR-AUC; mitigations include frozen holdout sets, cross-validation with leakage-aware folds, or reporting confidence intervals when computationally feasible.
+    \item \textbf{Class prior mismatch.} Resampling alters empirical priors; metrics must be recomputed on natural prevalences before operational translation.
 \end{itemize}
-These comparisons provide evidence that model selection is performance-driven rather than arbitrary.
 
-\subsection{Operational Threshold Analysis}
-Beyond model choice, threshold selection has direct operational impact. The final thesis text should justify the selected threshold $\tau^\star$ by linking it to expected analyst capacity and fraud-risk tolerance. A practical interpretation should answer the following:
-\begin{itemize}
-    \item How many alerts per day are generated at $\tau^\star$?
-    \item What percentage of known fraud cases is captured at $\tau^\star$?
-    \item How does changing $\tau$ affect false-positive volume?
-\end{itemize}
-This analysis demonstrates that the solution is not only statistically valid but operationally deployable.
+\subsection{External validity}
+Rare fraud typologies absent from the corpus remain invisible irrespective of ROC dominance. Geographic and issuer coverage limits extrapolation; adversarial adaptation after deployment rotates attack mixtures beyond retrospective archives \cite{lucas_jurgovsky_ccfraud_survey2020,yousefi_fraud_survey2019}. Any claim implying robustness absent prospective monitoring should be withheld.
 
-\subsection{Explainability Utility in Analyst Decisions}
-The explanation layer should be evaluated through representative case studies. For each case, the chapter should document the model score, dominant feature contributors, and the analyst action. A concise reporting template is shown in Table~\ref{tab:case-study-template}.
+\subsection{Construct validity}
+Confusion-matrix-derived metrics presume labels reflect ground truth adjudication—a fragile assumption when investigative outcomes lag weeks. Explanation constructs must not be mistaken for behavioural mechanisms; divergence between surrogate attributions indicates construct misalignment requiring triangulation rather than dismissal \cite{xai_survey}.
 
-\begin{table}[htbp]
-\centering
-\small
-\setlength{\tabcolsep}{6pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{cc>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
-\toprule
-\textbf{Case ID} & \textbf{Model score} & \textbf{Top contributors} & \textbf{Analyst action} \\
-\midrule
-Case 1 & to be reported & to be reported & to be reported \\
-Case 2 & to be reported & to be reported & to be reported \\
-Case 3 & to be reported & to be reported & to be reported \\
-\bottomrule
-\end{tabularx}
-\caption{Transaction-level explanation case study template.}
-\label{tab:case-study-template}
-\end{table}
+\subsection{Conclusion validity}
+Small positive counts inflate variance on precision estimates; smoothing, stratified bootstrap, or Bayesian posteriors tighten statements. Comparative claims between models ought to cite effect sizes—not only $p$-values—bearing in mind that repeated threshold tuning without multiplicity control erodes Frequentist guarantees.
 
-Discussion should focus on whether explanations are stable, understandable, and aligned with domain intuition. If explanations frequently highlight features that analysts consider irrelevant, this may indicate feature leakage, spurious correlations, or limits in preprocessing constraints.
-
-\subsection{Business and Compliance Perspective}
-Results should also be interpreted from a governance perspective. The combination of prediction logs, model versioning, and explanation metadata provides a traceable decision trail that supports audit readiness. The final chapter text should therefore include a short statement on how these artifacts satisfy internal review and accountability requirements in financial environments.
-
-\subsection{Limitations of Reported Results}
-The discussion must acknowledge that results are conditional on the available dataset, labeling quality, and observation period. If the dataset is geographically or temporally narrow, external validity is limited. If fraud patterns shift, periodic retraining and threshold recalibration become mandatory. Presenting these limitations strengthens academic credibility.
-
-\section{Threats to Validity}
-Three validity tensions persist. Temporal covariate shift erodes calibrated probabilities absent monitoring. Explanation artefacts summarise model sensitivity, yet remain non-causal and potentially unstable across neighbours in $\mathcal{X}$ \cite{xai_survey}. Human factors---investigator trust curves, escalation protocol elasticity---moderate uptake independent of ROC geometry.
+Residual holistic tensions remain: calibrated probabilities degrade under drift absent monitoring dashboards; heuristic explanation masks omit Shapley efficiency yet remain valuable when labelled honestly; behavioural acceptance among investigators modulates usefulness independently of ROC geometry.
 
 \section{Minimal Reproducibility Artefacts}
-A companion source repository provides executable trainers, serialised artefacts, REST scoring surfaces, and interactive visualisations purely to mirror the methodological pipeline; exhaustive source listings are orthogonal to dissertation arguments and remain external reading. Quantitative filings in Table~\ref{tab:model-comparison} should therefore be regenerated from scripted seeds rather than hand-transcribed.
+A companion source repository provides executable trainers, serialised artefacts, REST scoring surfaces, and interactive visualisations purely to mirror the methodological pipeline (see Chapter~4 for a structured walkthrough of the HTTP/UI boundaries). Exhaustive source listings are orthogonal to dissertation arguments and remain external reading. Quantitative filings in Table~\ref{tab:model-comparison} should therefore be regenerated from scripted seeds rather than hand-transcribed.
+
+\subsection{Mandatory disclosure checklist for empirical chapters}
+Responsible reporting extends beyond plugging numbers into stylised templates. The following disclosures—mirroring emerging norms in reproducible ML for finance—increase argumentative density without substituting peer review proper:
+\begin{itemize}
+    \item \textbf{Cohort delineation dates} spanning train, validation, and test coverage with timezone clarity.
+    \item \textbf{Label provenance summaries} distinguishing rule-driven flags, investigative confirmations, provisional chargebacks awaiting arbitration, or synthetic hybrid labels prevalent in sanitized corpora.
+    \item \textbf{Excluded segments} (\emph{e.g.}, chargeback reversal windows, dormant accounts) articulated with cardinality counts.
+    \item \textbf{Hardware and library manifests} abbreviated yet sufficient for approximate replication (CPU family, parallelism toggles).
+    \item \textbf{Tuning lineage} distinguishing exploratory analyses from decisive model picks to temper selective reporting claims.
+\end{itemize}
+Checklists do not mechanically guarantee truthful science, yet they scaffold adversarial scrutiny from examiners and align with supervisory expectations stressing model inventories \cite{fraud_handbook}.
+
+\section{Sensitivity analyses and comparative stress tests}
+\textbf{Hyperparameter perturbations.} Tree-depth ceilings, leaf minimums, and learning-rate schedules influence both scores and surrogate attributions. Documenting plausible ranges via ablation ladders (even if abbreviated to narrative summaries absent exhaustive grids) reinforces that reported metrics hinge on articulated search constraints rather than mystical defaults.
+
+\textbf{Threshold robustness curves.} Instead of analysing a lone $\tau^\star$, supply commentary on neighbourhoods: small upward adjustments may crater recall disproportionately due to logistic-like saturation fronts in ensemble scores; downward shifts amplify alert storms. Operational teams translate such slopes into contingency planning.
+
+\textbf{Segment disaggregation.} When cardinalities suffice, dissect metrics across merchant segments, weekdays, monetary deciles—guarding against advantageous aggregation across heterogeneous behaviours \cite{lucas_jurgovsky_ccfraud_survey2020}. Sparse segments may withhold statistically stable estimates; disclaim accordingly.
+
+\textbf{Synthetic stress injectors} (Gaussian jitter on PCA dimensions, swaps of benign/fraud extremes) illuminate explanation brittleness. Although not formal adversarial optimisation, coarse stress tests preempt reviewer scepticism grounded in folklore about fragile surrogate attributions \cite{xai_survey}.
+
+\section{Bridging placeholders with final empirical narration}
+Dissertations often confront schedule tension between structural completeness (tables awaiting numerics) and examiner deadlines. Rather than interpreting ``to be reported'' placeholders as deficient scholarship \emph{per se}, this chapter treats them as methodological commitments analogous to registered-report templates in experimental sciences: they declare \emph{which} contrasts matter before measurement noise threatens selective emphasis \cite{fraud_handbook}.
+
+Upon obtaining trained models, populate Table~\ref{tab:model-comparison} contemporaneously with script-generated CSV logs checked into reproducibility bundles—never defer transcription to informal note-taking susceptible to clerical slips. Maintain paired commentary linking each quantitative delta to asymmetric cost reasoning (RQ1) whilst cautioning readers when incremental PR-AUC stems from preprocessing tweaks rather than estimator superiority.
+
+Future thesis revisions may still add three vignettes (high-scoring legitimate anomaly, borderline score, clear fraud) sourced from ExplainableFraud exports; their absence here reflects schedule constraints rather than diminished methodological value.
 
 \section{Chapter Summary}
 This empirical chapter tethered probabilistic forecasting, asymmetric metrics, qualitative explanation critique, and governance reflections to reproducible scaffolding. Subsequent conclusions synthesise whether research questions RQ1--RQ3 received satisfactory intellectual closure.

@@ -1,0 +1,148 @@
+@if (Job is not null)
+{
+    var percent = Math.Clamp(Job.ProgressPercent, 0, 100);
+
+    <div class="card mt-4">
+        <div class="card-header d-flex gap-2 flex-wrap align-items-center justify-content-between">
+            <div class="fw-semibold">Training job</div>
+            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                <span class="badge bg-secondary">@Job.ModelFamily</span>
+                @if (Job.UsedInProcessMlTrainer && Job.DataSourceKind is TrainingDataSourceKind.SyntheticDeterministic)
+                {
+                    <span class="badge bg-info text-dark">Synthetic ≥10k (deterministic)</span>
+                }
+                @if (Job.UsedInProcessMlTrainer && Job.DataSourceKind is TrainingDataSourceKind.LocalCreditcardCsv)
+                {
+                    <span class="badge bg-success">Observational CSV</span>
+                }
+                @if (Job.IsSimulated && !Job.UsedInProcessMlTrainer)
+                {
+                    <span class="badge bg-warning text-dark">Timeline-only (no estimator)</span>
+                }
+                @if (TrainingIterationsLabel is { } lbl)
+                {
+                    <span class="badge bg-dark">@lbl</span>
+                }
+            </div>
+        </div>
+
+        <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(Job.DataSourceSummary))
+            {
+                <div class="rounded border px-3 py-2 mb-3 small bg-white">
+                    @Job.DataSourceSummary
+                </div>
+            }
+
+            @if (Job.LabelDistribution is { } labels)
+            {
+                <div class="rounded border px-3 py-2 mb-3 small bg-light-subtle">
+                    <div class="fw-semibold mb-2">Binary label counts (load + stratified split)</div>
+                    <dl class="row mb-0 small gx-3">
+                        <dt class="col-sm-4 col-lg-3">After load</dt>
+                        <dd class="col-sm-8 col-lg-9">@Fmt(labels.AfterLoad)</dd>
+                        <dt class="col-sm-4 col-lg-3">Train</dt>
+                        <dd class="col-sm-8 col-lg-9">@Fmt(labels.Train)</dd>
+                        <dt class="col-sm-4 col-lg-3">Validation</dt>
+                        <dd class="col-sm-8 col-lg-9">@Fmt(labels.Validation)</dd>
+                        <dt class="col-sm-4 col-lg-3">Test</dt>
+                        <dd class="col-sm-8 col-lg-9">@Fmt(labels.Test)</dd>
+                    </dl>
+                </div>
+            }
+
+            <div class="small text-muted">
+                Job <code>@Job.JobId</code> · @Job.DatasetKind · @Job.Status · @Job.Phase
+                · duration @Job.DurationMilliseconds ms
+                @if (Job.CompletedAt is { } ended)
+                {
+                    <span> · terminal @ended.ToLocalTime()</span>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Job.Message))
+            {
+                <div class="mt-2">
+                    @Job.Message
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Job.ErrorDetail))
+            {
+                <div class="alert alert-danger mt-3 mb-0" role="alert">
+                    @Job.ErrorDetail
+                </div>
+            }
+
+            <div class="progress mt-3" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@percent">
+                <div class="progress-bar @(Job.Status switch
+                         {
+                             TrainingJobStatus.Failed => "bg-danger",
+                             TrainingJobStatus.Succeeded => "bg-success",
+                             _ => string.Empty
+                         })"
+                     style="@($"width: {percent}%")">
+                    @percent%
+                </div>
+            </div>
+
+            @if (_lastUpdated is not null)
+            {
+                <div class="form-text mt-2">Last poll: @_lastUpdated.Value.ToLocalTime().ToString("T")</div>
+            }
+
+            <TrainingPipelineStagesList Stages="@Job.Stages"/>
+
+            @if (Job.Metrics is { } metrics && Job.Status == TrainingJobStatus.Succeeded)
+            {
+                <TrainingJobMetricsSummary Metrics="metrics"
+                                           TrainingIterationsReported="Job.TrainingIterationsReported"
+                                           DurationMsFallback="Job.DurationMilliseconds"
+                                           UsesRealMlNet="Job.UsedInProcessMlTrainer"
+                                           UsesSyntheticRows="Job.UsesSyntheticRows"
+                                           FooterNote="@ResultsFooter"/>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private DateTimeOffset? _lastUpdated;
+
+    [Parameter, EditorRequired]
+    public TrainingJobDto? Job { get; set; }
+
+    private static string Fmt(TrainingBinaryLabelCountsDto c) =>
+        $"positive (fraud): {c.Positives:N0} · legitimate: {c.Negatives:N0}";
+
+    private string? TrainingIterationsLabel =>
+        Job switch
+        {
+            null => null,
+            { ModelFamily: TrainingModelFamily.LogisticRegressionBaseline } => "Linear LBFGS · no tree depth",
+            { TrainingIterationsReported: > 0 and var n } => $"{n} constituent trees trained",
+            _ => null
+        };
+
+    private string ResultsFooter =>
+        Job switch
+        {
+            { UsedInProcessMlTrainer: false, IsSimulated: true } =>
+                "Timeline-only mode never invoked Fit(); enable RunSyntheticInProcessTraining for empirical metrics.",
+            { UsedInProcessMlTrainer: true, DataSourceKind: TrainingDataSourceKind.SyntheticDeterministic } =>
+                "Metrics use ML.NET’s score-based evaluator on the withheld test fold · synthetic-but-structured corpus for repeatable thesis demos.",
+            { UsedInProcessMlTrainer: true, DataSourceKind: TrainingDataSourceKind.LocalCreditcardCsv } =>
+                "Metrics derive from whichever creditcard.csv the API resolved locally (offline); row counts mirror the ingest cap in appsettings.",
+            { UsedInProcessMlTrainer: true } =>
+                "Hold-out metrics from the last Fit/Evaluate on this API instance.",
+            _ => "Awaiting telemetry."
+        };
+
+    protected override void OnParametersSet()
+    {
+        if (Job is not null)
+            _lastUpdated = DateTimeOffset.UtcNow;
+
+        base.OnParametersSet();
+    }
+}

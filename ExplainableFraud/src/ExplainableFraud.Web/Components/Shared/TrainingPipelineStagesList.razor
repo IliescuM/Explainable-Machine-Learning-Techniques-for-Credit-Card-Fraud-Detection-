@@ -1,0 +1,45 @@
+@if (Stages.Count > 0)
+{
+    <div class="mt-4">
+        <div class="fw-semibold mb-2">Pipeline stages</div>
+        <div class="list-group">
+            @foreach (var s in Stages.OrderBy(OrderKey))
+            {
+                var badge = s.Status switch
+                {
+                    TrainingPipelineStageStatus.Completed => "success",
+                    TrainingPipelineStageStatus.Running => "primary",
+                    TrainingPipelineStageStatus.Failed => "danger",
+                    TrainingPipelineStageStatus.Skipped => "secondary",
+                    _ => "light text-dark"
+                };
+                <div class="list-group-item py-2">
+                    <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+                        <div class="fw-semibold">@s.Title</div>
+                        <span class="badge bg-@badge">@s.Status</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(s.Detail))
+                    {
+                        <div class="small text-muted mt-1">@s.Detail</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private static readonly string[] Wire =
+    [
+        "validate", "split", "preprocess", "imbalance", "fit", "evaluate", "artifact"
+    ];
+
+    [Parameter]
+    public IReadOnlyList<TrainingPipelineStageDto> Stages { get; set; } = [];
+
+    private static int OrderKey(TrainingPipelineStageDto s)
+    {
+        var idx = Array.IndexOf(Wire, s.Id);
+        return idx >= 0 ? idx : Wire.Length + s.Id.GetHashCode();
+    }
+}

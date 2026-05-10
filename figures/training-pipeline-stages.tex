@@ -1,0 +1,23 @@
+% TikZ figure: coarse pipeline stages surfaced in TrainingJobDto.Stages (UI badges + progress aggregate).
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Latex,
+  stage/.style={draw, rounded corners=2pt, align=center, inner sep=4pt,
+                minimum width=1.75cm, minimum height=1.85cm},
+  arrow/.style={->, thick}
+]
+  \node[stage, fill=yellow!12] (a) {\textbf{1}\\dataset\\validation};
+  \node[stage, fill=yellow!12, right=0.42cm of a] (b) {\textbf{2}\\train / val\\\& test split};
+  \node[stage, fill=orange!15, right=0.42cm of b] (c) {\textbf{3}\\pre-\\process};
+  \node[stage, fill=orange!15, right=0.42cm of c] (d) {\textbf{4}\\imbalance\\\& trainer};
+  \node[stage, fill=green!14, right=0.42cm of d] (e) {\textbf{5}\\model\\fitting};
+  \node[stage, fill=green!14, right=0.42cm of e] (f) {\textbf{6}\\hold-out\\evaluation};
+  \node[stage, fill=gray!15, right=0.42cm of f] (g) {\textbf{7}\\artifact\\notes};
+
+  \draw[arrow] (a) -- (b);
+  \draw[arrow] (b) -- (c);
+  \draw[arrow] (c) -- (d);
+  \draw[arrow] (d) -- (e);
+  \draw[arrow] (e) -- (f);
+  \draw[arrow] (f) -- (g);
+\end{tikzpicture}

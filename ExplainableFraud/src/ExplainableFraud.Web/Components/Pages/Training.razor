@@ -1,0 +1,328 @@
+@page "/training"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@inject ITrainingApi TrainingApi
+
+<PageTitle>Model training</PageTitle>
+
+<h1 class="mb-2">Model training</h1>
+
+<p class="text-muted small mb-0">
+    Dissertation demo workload: reproducible dashboards with honest ML.NET evaluation on the wire.
+</p>
+
+<div class="row row-cols-1 row-cols-md-3 g-3 mt-3 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm bg-light-subtle h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted fw-semibold small mb-2">Runtime</div>
+                <div class="small">
+                    Training runs inside the ASP.NET Core API (<code>@TrainingApi.BaseAddress</code>).
+                    This page records a tracked job progress snapshot and polls the host until completion.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm bg-light-subtle h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted fw-semibold small mb-2">Dataset</div>
+                <ul class="small mb-0 ps-3">
+                    <li>If <code>creditcard.csv</code> appears on configured server paths, the API loads it offline (no outbound network).</li>
+                    <li>Otherwise a deterministic synthetic generator supplies at least 10k ULB-shaped rows.</li>
+                    <li>Each finished job spells out which branch was taken.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm bg-light-subtle h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted fw-semibold small mb-2">Production artifacts</div>
+                <div class="small mb-2">For graded exports, use the batch trainer CLI, then plug the zipped model into <code>MlPipeline:ModelPath</code>.</div>
+                <div class="font-monospace small text-break lh-sm">
+                    dotnet run --project ExplainableFraud.Training -- <span class="text-nowrap">--data creditcard.csv</span><br/>
+                    --out .\artifacts
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_datasetsError))
+{
+    <div class="alert alert-danger" role="alert">@_datasetsError</div>
+}
+else if (_datasets.Count == 0)
+{
+    <div class="text-muted small">Loading datasets…</div>
+}
+else
+{
+    @if (_datasets[0] is { } probeRow)
+    {
+        @if (probeRow.LocalCreditcardCsvDiscoverable)
+        {
+            <div class="alert alert-success py-2 small" role="status">
+                <strong>Local creditcard.csv</strong> is discoverable at
+                <code class="text-break d-inline">@probeRow.LocalCreditcardCsvAbsolutePath</code>
+                @if (probeRow.LocalCreditcardCsvApproximateDataRowCount is { } approxRows)
+                {
+                    <span> (~@approxRows.ToString("N0") data rows, line scan).</span>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning py-2 small" role="status">
+                <strong>No creditcard.csv</strong> on any searched path from the API. Runs fall back to ≥10k deterministic synthetics until the CSV is placed at the repo root or listed under
+                <code>TrainingJobs:Simulation:CreditcardCsvCandidateRelativePaths</code>.
+            </div>
+        }
+    }
+
+    <TrainingDatasetPicker Items="@_datasets"
+                           Subtitle="@_pickerSubtitle"
+                           @bind-SelectedKind="_datasetKind"/>
+
+    <div class="mt-3">
+        <TrainingModelPicker Subtitle="@_modelPickerSubtitle"
+                             @bind-SelectedFamily="_modelFamily"/>
+    </div>
+
+    <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
+        <button class="btn btn-primary" disabled="@(!CanStart || _busy)" @onclick="StartAsync">Start training</button>
+        <button class="btn btn-outline-secondary" disabled="@(!_jobId.HasValue || _polling)" @onclick="StopPollingAsync">
+            Stop updates
+        </button>
+        @if (_polling)
+        {
+            <span class="text-muted small">Polling…</span>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_actionError))
+{
+    <div class="alert alert-danger mt-3" role="alert">@_actionError</div>
+}
+
+<TrainingJobProgressCard Job="_job"/>
+
+@code {
+    private readonly CancellationTokenSource _disposeCts = new();
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(750));
+
+    private CancellationTokenSource? _pollLoopCts;
+    private Task? _pollTask;
+
+    private List<TrainingDatasetSummaryDto> _datasets = [];
+
+    private string? _datasetsError;
+
+    private string? _actionError;
+
+    /// <remarks>Unset uses <see cref="TrainingDatasetKind.Unspecified"/> for the sentinel option.</remarks>
+    private TrainingDatasetKind _datasetKind;
+
+    private string _pickerSubtitle =
+        "Dataset label only changes row multipliers when synthetics apply; CSV discovery prefers the configured relative paths documented in `/api/training/datasets`.";
+
+    private string _modelPickerSubtitle =
+        "Logistic LBFGS, FastTree (boost), or FastForest (bagged trees)—all wired through the same in-process evaluator.";
+
+    private TrainingModelFamily _modelFamily = TrainingModelFamily.LogisticRegressionBaseline;
+
+    private bool _busy;
+    private Guid? _jobId;
+    private TrainingJobDto? _job;
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        _pollLoopCts?.Cancel();
+
+        if (_pollTask is not null)
+        {
+            try
+            {
+                await _pollTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when polling is cancelled during disposal.
+            }
+        }
+
+        _pollLoopCts?.Dispose();
+        _pollLoopCts = null;
+        _pollTask = null;
+
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
+        _timer.Dispose();
+
+        GC.SuppressFinalize(this);
+    }
+
+    private bool CanStart => _datasets.Count > 0
+                             && _datasetKind is not TrainingDatasetKind.Unspecified
+                             && _modelFamily is not TrainingModelFamily.Unspecified
+                             && _modelFamily is not TrainingModelFamily.NeuralNetworkExperimentalPlaceholder;
+
+    private bool _polling;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDatasetsAsync().ConfigureAwait(false);
+        await base.OnInitializedAsync().ConfigureAwait(false);
+    }
+
+    private async Task LoadDatasetsAsync()
+    {
+        _datasetsError = null;
+
+        try
+        {
+            _datasets = (await TrainingApi.ListDatasetsAsync(_disposeCts.Token).ConfigureAwait(false)).ToList();
+        }
+        catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
+        {
+            // Tear down.
+        }
+        catch (FraudApiException ex)
+        {
+            _datasetsError = $"Training metadata API responded with HTTP {ex.StatusCode}. Start ExplainableFraud.Api and verify CORS/ApiBaseUrl.";
+        }
+        catch (HttpRequestException)
+        {
+            _datasetsError = "Could not reach the API. Confirm ExplainableFraud.Api is running and ApiBaseUrl is correct.";
+        }
+    }
+
+    private async Task StartAsync()
+    {
+        if (!CanStart || _busy)
+            return;
+
+        _busy = true;
+        _actionError = null;
+        await StopPollingAsync().ConfigureAwait(false);
+
+        _job = null;
+        _jobId = null;
+
+        try
+        {
+            var response =
+                await TrainingApi.StartJobAsync(new StartTrainingJobRequest
+                    {
+                        DatasetKind = _datasetKind,
+                        ModelFamily = _modelFamily
+                    }, _disposeCts.Token).ConfigureAwait(false);
+
+            _jobId = response.JobId;
+            _job = await TrainingApi.GetJobAsync(response.JobId, _disposeCts.Token).ConfigureAwait(false);
+
+            BeginPollingLoop(response.JobId);
+        }
+        catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
+        {
+            // Tear down while starting.
+        }
+        catch (FraudApiException ex)
+        {
+            _actionError = $"HTTP {ex.StatusCode}: {ex.ResponseBody}";
+        }
+        catch (HttpRequestException)
+        {
+            _actionError = "Network error contacting the API — confirm ApiBaseUrl/firewall.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StopPollingAsync()
+    {
+        _polling = false;
+        _pollLoopCts?.Cancel();
+
+        if (_pollTask is not null)
+        {
+            try
+            {
+                await _pollTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when polling is cancelled manually.
+            }
+        }
+
+        _pollLoopCts?.Dispose();
+        _pollLoopCts = null;
+        _pollTask = null;
+    }
+
+    private void BeginPollingLoop(Guid jobId)
+    {
+        _pollLoopCts?.Cancel();
+        _pollLoopCts?.Dispose();
+
+        _pollLoopCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+        _polling = true;
+        _pollTask = PollLoopAsync(jobId, _pollLoopCts.Token);
+    }
+
+    private async Task PollLoopAsync(Guid jobId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (_polling && !cancellationToken.IsCancellationRequested)
+            {
+                var next = await _timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+                if (!next || !_polling)
+                    break;
+
+                var snapshot =
+                    await TrainingApi.GetJobAsync(jobId, cancellationToken).ConfigureAwait(false);
+
+                if (snapshot is null)
+                {
+                    await InvokeAsync(() =>
+                    {
+                        _actionError = "Job vanished from memory (API restart clears in-memory simulations). Start again.";
+                        _polling = false;
+                    }).ConfigureAwait(false);
+                    break;
+                }
+
+                await InvokeAsync(() =>
+                {
+                    _job = snapshot;
+                    StateHasChanged();
+                }).ConfigureAwait(false);
+
+                if (snapshot.Status is TrainingJobStatus.Succeeded or TrainingJobStatus.Failed)
+                {
+                    _polling = false;
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        when (cancellationToken.IsCancellationRequested || _disposeCts.Token.IsCancellationRequested)
+        {
+            // Normal shutdown / manual stop path.
+        }
+        finally
+        {
+            _pollLoopCts?.Dispose();
+            _pollLoopCts = null;
+            _pollTask = null;
+        }
+    }
+}

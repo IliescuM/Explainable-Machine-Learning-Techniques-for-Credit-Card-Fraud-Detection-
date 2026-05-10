@@ -1,0 +1,41 @@
+<label class="form-label" for="trainingDataset">Dataset</label>
+<select class="form-select"
+        id="trainingDataset"
+        value="@(((int)SelectedKind).ToString(System.Globalization.NumberFormatInfo.InvariantInfo))"
+        @onchange="OnChangedAsync">
+
+    <option value="0">Choose a dataset...</option>
+
+    @foreach (var ds in Items)
+    {
+        <option value="@(((int)ds.Kind).ToString(System.Globalization.NumberFormatInfo.InvariantInfo))" title="@ds.Description">
+            @ds.DisplayName (@(ds.Kind))
+        </option>
+    }
+</select>
+
+<div class="form-text text-muted mt-1">@Subtitle</div>
+
+@code {
+    [Parameter]
+    public TrainingDatasetKind SelectedKind { get; set; }
+
+    [Parameter]
+    public EventCallback<TrainingDatasetKind> SelectedKindChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TrainingDatasetSummaryDto> Items { get; set; } = [];
+
+    [Parameter]
+    public string Subtitle { get; set; } = string.Empty;
+
+    private Task OnChangedAsync(ChangeEventArgs args)
+    {
+        var raw = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(raw) || !int.TryParse(raw, out var numeric))
+            return Task.CompletedTask;
+
+        var kind = (TrainingDatasetKind)numeric;
+        return SelectedKindChanged.InvokeAsync(kind);
+    }
+}

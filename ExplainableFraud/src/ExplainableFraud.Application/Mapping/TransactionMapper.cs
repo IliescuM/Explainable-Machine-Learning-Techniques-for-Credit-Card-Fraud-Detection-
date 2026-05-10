@@ -5,7 +5,7 @@ namespace ExplainableFraud.Application.Mapping;
 
 public static class TransactionMapper
 {
-    public const int ExpectedPrincipalDimensions = 28;
+    public const int ExpectedPrincipalDimensions = FraudScoreRequest.PrincipalComponentCount;
 
     public static TransactionFeatures ToDomain(FraudScoreRequest request)
     {

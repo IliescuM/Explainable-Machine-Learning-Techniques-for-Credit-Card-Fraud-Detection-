@@ -1,0 +1,25 @@
+{
+  "name": "disertatie",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "screenshot:fraud-scored": "node scripts/capture-fraud-result.mjs http://localhost:5246/fraud figures/ui-fraud-scored.png"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IliescuM/Explainable-Machine-Learning-Techniques-for-Credit-Card-Fraud-Detection-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/IliescuM/Explainable-Machine-Learning-Techniques-for-Credit-Card-Fraud-Detection-/issues"
+  },
+  "homepage": "https://github.com/IliescuM/Explainable-Machine-Learning-Techniques-for-Credit-Card-Fraud-Detection-#readme",
+  "devDependencies": {
+    "playwright": "^1.59.1"
+  }
+}

@@ -7,6 +7,15 @@ A supplementary engineering stance favours consolidating training, inference, an
 
 From an operational perspective, the methodological architecture must satisfy four constraints: reproducibility of model behavior across environments, traceability of prediction events for audit scenarios, low-latency response during analyst workflows, and modularity to support future model or explanation-method replacement.
 
+\section{Tightening correspondence between research questions and design artefacts}
+\textbf{RQ1} demands that evaluation semantics acknowledge extreme skew beyond accuracy. Architectural consequences include insisting on stratified thresholds, documenting PR summaries alongside ROC, and forbidding tacit cutoff policies at unexplained constants; training scripts should export alert-yield dashboards consumable downstream by dashboards such as ExplainableFraud metric cards whenever institutional policy aligns.
+
+\textbf{RQ2} stipulates differentiated epistemic language for explanatory vectors. Architectural consequences include versioning explanation procedures, forbidding undocumented toggles across environments, pairing each explanation instance with methodological metadata (baseline, perturbation sampler, surrogate class), and training analyst communications to avoid causal phrasing unsupported by causal identification strategies.
+
+\textbf{RQ3} foregrounds probabilistic hygiene under drift and adversarial co-evolution. Architectural consequences prescribe calibration validation protocols, versioning of artefacts with checksum manifests, segregation of exploratory tuning sets from decisive holdouts, telemetry hooks signalling covariate shift, and disclaimers distinguishing ordinal scores from calibrated percentages.
+
+These clauses do not presume the availability of exhaustive enterprise telemetry; rather, they state normative completeness criteria against which demonstrations can be audited.
+
 \section{System Architecture}
 The system architecture follows a layered pattern composed of data, model, explainability, application, and governance layers. This separation reduces coupling between data preparation, model inference, and user-facing interaction logic.
 
@@ -21,7 +30,7 @@ Formally, each transaction is represented by a feature vector $x \in \mathbb{R}^
 \begin{equation}
 \hat{y} = f_{\theta}(x), \quad \hat{y} \in [0,1]
 \end{equation}
-where $\hat{y}$ is interpreted as the estimated probability of fraud and $\theta$ denotes the trained model parameters. A binary decision is then obtained using a configurable threshold $\tau$:
+where $\hat{y}$ is nominally interpreted as a fraud propensity in $[0,1]$. Depending on the hypothesis class and loss, this quantity may behave as a well-calibrated probability (frequencies among instances at similar scores match $\hat{y}$) or merely as a monotone score suitable for ranking \cite{niculescu_caruana_calib2005,molnarInterpretableMachineLearningBook}. Institutional playbooks therefore separate \emph{ranking} reports (ROC, PR, alert yield curves) from \emph{reliability} checks (calibration plots, Brier score disaggregations) whenever thresholds are communicated as percentage cutoffs to non-technical audiences. Here $\theta$ denotes trained parameters; a binary operational decision uses a configurable threshold $\tau$:
 \begin{equation}
 \text{decision}(x) =
 \begin{cases}
@@ -32,7 +41,7 @@ where $\hat{y}$ is interpreted as the estimated probability of fraud and $\theta
 
 Feature design is guided by both domain relevance and explainability utility. In addition to predictive value, selected features should remain semantically interpretable by fraud analysts, such as transaction amount patterns, velocity indicators, merchant-risk aggregates, and behavioral deviations relative to customer historical profiles. Highly opaque engineered features are minimized unless they provide substantial incremental predictive benefit.
 
-To address class imbalance, the pipeline incorporates threshold-aware evaluation and may include weighted learning or rebalancing strategies depending on dataset characteristics. The final decision threshold is treated as a business parameter and calibrated based on risk appetite and investigation capacity rather than fixed at a default probability cutoff.
+To address class imbalance, the pipeline incorporates threshold-aware evaluation and may include class-weighted empirical risk, stratified validation, or sampling adjustments echoing algorithmic families surveyed in the imbalance literature \cite{he_garcia_imbalanced2009,fraud_handbook}. The final operational threshold is a \emph{business} parameter: it aligns expected false-positive workload with reserve fraud loss tolerances, optionally via cost ratios $c_{FN}/c_{FP}$, not with a default $0.5$ score cutoff \cite{fraud_handbook}. Geometrically, moving $\tau$ traces a path through precision--recall space whose economic adequacy depends on PR geometry under rare positives rather than on ROC summaries alone \cite{davis_goadrich_icml06}.
 
 \section{Fraud Detection Model Strategy}
 Let $\mathcal{X}\subset\mathbb{R}^d$ and $\mathcal{Y}=\{0,1\}$. Empirical risk minimisation seeks $\theta^\star\in\Theta$ balancing misclassification surrogates under imbalance-aware weights; tree ensembles (additive expansion of shallow decision stumps) and regularised logistic models exemplify tractable hypothesis classes for tabulated fraud benchmarks \cite{fraud_handbook,mldotnet_docs}. Complexity--variance tensions motivate cross-validated ensemble depth control and abstention thresholds informed by ROC/PR geometries rather than nominal accuracy alone.
@@ -51,14 +60,23 @@ Let $\nu$ be a neighbourhood distribution centred at $x$. LIME seeks interpretab
 Cooperative-game Shapley values yield vectors $\phi(x)\in\mathbb{R}^d$ satisfying \emph{efficiency} $\sum_i \phi_i(x) = f_\theta(x) - \mathbb{E}[f_\theta]$ under stated reference measures, alongside symmetry and dummy axioms \cite{shap_original}. Tree-specific approximations trade exactness for polynomial-time computation but retain additive decomposability valued in audit trails.
 
 \paragraph{Composite hybrid strategy proposed here.}
-The methodological stance adopted in this thesis treats global ranked signals (e.g., univariate association strengths, permutation importance summaries) as orientation priors, while local emphasises modulate instance-level deviation from training moments. Formally, one may view per-feature weights $w_i$ combined with z-scores $z_i(x)$ as a pragmatic sensitivity mask:
+The methodological stance aligns with hierarchical explanation practice discussed in broader XAI surveys: global summaries contextualise recurring risk drivers while local artefacts justify individual escalation \cite{guidotti_blackbox_survey2018,xai_survey}. Concretely, global ranked signals (e.g., univariate association strengths, correlation-based surrogates when full permutation regimes are toolchain-limited) act as orientation priors, while local emphasises modulate instance-level deviation from training moments. Formally, one may view per-feature weights $w_i$ combined with z-scores $z_i(x)$ as a pragmatic sensitivity mask:
 \begin{equation}
 e_i(x) \propto w_i \cdot |z_i(x)|, \qquad \sum_i e_i(x) = 1 \text{ after normalisation,}
 \end{equation}
-acknowledging that $e(x)$ is \emph{not} a Shapley vector unless further axiomatic constraints are engineered. Analyst communications must label $e(x)$ as indicative influence magnitudes, not causal effects.
+acknowledging that $e(x)$ is \emph{not} a Shapley vector nor a LIME surrogate coefficient unless additional axiomatic or neighbourhood constraints are engineered. The ExplainableFraud reference build instantiates this mask under the UI label \texttt{MetadataWeightedDeviation}; it must not be described as SHAP or LIME without replacing the inference-time implementation. Analyst communications must label $e(x)$ as indicative influence magnitudes, not causal effects, and should reference Model Card/Datasheet-style disclosure when publishing artefact bundles \cite{mitchell2019model_cards,gebru2021datasheets}.
 
 \section{Operational Readiness and Governance Hooks}
 Information systems realisations may expose $(\hat{y}, e(x), \text{model id})$ through REST services and interactive clients; such engineering choices are secondary to the mathematical contracts above. Regardless of stack, governance requires: (i) immutable logs linking requests to model versions, (ii) masking of sensitive attributes in traces, and (iii) controlled rotation of $\theta$ with regression tests on both scores and explanation stability \cite{gdpr_text,xai_survey}.
 
+\subsection{Model risk management alignment}
+Contemporary model risk frameworks (internal regardless of national transposition) stress three lines of defence: builder self-assessment, independent validation, and internal audit sampling \cite{fraud_handbook}. Explainable outputs participate differentially across lines: training-time documentation supports builders; challenger comparisons and stress harnesses feed validators; sampled alert reconstructions feed auditors verifying that stated procedures match shop-floor practice. The dissertation's methodology slots naturally into the second line by supplying templates for metric disclosure, threshold rationale, and explanation caveats—while acknowledging that full enterprise control libraries exceed scope.
+
+\subsection{Privacy, logging, and purpose limitation}
+Transaction ledgers contain personal data; logging raw features for each automated score risks contravening purpose limitation unless retention windows, minimisation, and access tokens align with policy baselines \cite{gdpr_text}. Architectures should therefore store reversible references (pseudonymous IDs) while keeping human-readable traces on separate secured channels. Where explainers require background distributions, sampling must respect consent boundaries and exclude sensitive attributes lacking legitimate fraud purpose.
+
+\subsection{Incident response and rollback playbooks}
+When fraud rings exploit model blind spots, institutions trigger rollback to prior $\theta$ snapshots, optionally coupled with temporary rule intensification. Methodological governance specifies acceptance tests re-evaluating PR-AUC, recall at fixed precision, and qualitative explanation spot checks before promoting rollbacks to full traffic. Documenting these steps—even descriptively—signals operational seriousness beyond academic prototypes.
+
 \section{Chapter Summary}
-This chapter formalised a methodology where discriminative scoring, threshold policies, and structured attributions coexist under explicit probabilistic and axiomatic regimes. Artefactual reproducibility precedes incidental software packaging. The ensuing chapter concentrates on empirical procedures, comparative metrics, and interpretive scrutiny rather than exhaustive code narration.
+This chapter formalised a methodology where discriminative scoring, threshold policies, and structured attributions coexist under explicit probabilistic and axiomatic regimes. Artefactual reproducibility precedes incidental software packaging. Chapter~4 presents a compact reference implementation; Chapter~5 concentrates on empirical procedures, comparative metrics, and interpretive scrutiny rather than exhaustive code narration.

@@ -1,12 +1,12 @@
 @page "/fraud"
 @rendermode InteractiveServer
-@inject HttpClient Http
+@inject IFraudScoringApi FraudScoringApi
 
 <PageTitle>Fraud score</PageTitle>
 
 <h1 class="mb-2">Fraud score</h1>
 <p class="text-muted small mb-0">
-    API <code>@Http.BaseAddress</code> · run <strong>ExplainableFraud.Api</strong> first.
+    API <code>@FraudScoringApi.BaseAddress</code> · run <strong>ExplainableFraud.Api</strong> first.
     Uses ML.NET when <code>Models/fraud-model.zip</code> exists; otherwise the heuristic baseline.
     See <a href="/">Home</a> for setup and <a href="visuals">Diagrams</a> for sample charts.
 </p>
@@ -48,61 +48,16 @@
 
 @if (_result is not null)
 {
-    <div class="card mt-4 shadow-sm">
-        <div class="card-body">
-            <h2 class="h5 card-title">Result</h2>
-            <dl class="row mb-0">
-                <dt class="col-sm-4">Fraud probability</dt>
-                <dd class="col-sm-8">@_result.FraudProbability.ToString("P2")</dd>
-                <dt class="col-sm-4">Threshold</dt>
-                <dd class="col-sm-8">@_result.DecisionThreshold.ToString("P2")</dd>
-                <dt class="col-sm-4">Likely fraud</dt>
-                <dd class="col-sm-8">@(_result.IsFraudLikely ? "Yes" : "No")</dd>
-                <dt class="col-sm-4">Model</dt>
-                <dd class="col-sm-8"><code>@_result.ModelVersion</code></dd>
-            </dl>
-        </div>
-    </div>
+    <RiskSummaryCard Result="_result" />
 
     @if (_result.ValidationMetrics is { } vm)
     {
-        <div class="card mt-3 border-info shadow-sm">
-            <div class="card-body">
-                <h3 class="h6 card-title text-info">Validation (training hold-out)</h3>
-                <dl class="row mb-0 small">
-                    <dt class="col-sm-4">ROC AUC</dt>
-                    <dd class="col-sm-8">@vm.AreaUnderRocCurve.ToString("F4")</dd>
-                    <dt class="col-sm-4">F1</dt>
-                    <dd class="col-sm-8">@vm.F1Score.ToString("F4")</dd>
-                    <dt class="col-sm-4">Train / test rows</dt>
-                    <dd class="col-sm-8">@vm.TrainRows / @vm.TestRows</dd>
-                </dl>
-            </div>
-        </div>
+        <ValidationMetricsCard Metrics="vm" />
     }
 
-    <h3 class="h6 mt-4">Explanations (approximate)</h3>
-    <p class="small text-muted mb-2">
-        Contributions combine global feature ranking (|Pearson r| vs fraud label on the train split) with how far each input deviates from training means (local emphasis).
-    </p>
-    <div class="table-responsive">
-        <table class="table table-sm table-striped align-middle">
-            <thead>
-                <tr><th>Feature</th><th class="text-end">Relative emphasis</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var c in _result.FeatureContributions)
-                {
-                    <tr>
-                        <td>@c.FeatureName</td>
-                        <td class="text-end">
-                            <span class="d-inline-block rounded-pill bg-secondary bg-opacity-25 px-2">@c.Contribution.ToString("N3")</span>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <ExplanationContributions Contributions="_result.FeatureContributions"
+                              Method="_result.ExplanationMethod"
+                              Summary="_result.ExplanationSummary" />
 }
 
 @code {
@@ -128,13 +83,19 @@
                 var parts = text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 if (parts.Length > 0)
                 {
-                    pcs = new float[28];
-                    var n = Math.Min(parts.Length, 28);
+                    if (parts.Length > FraudScoreRequest.PrincipalComponentCount)
+                    {
+                        _error = $"Expected at most {FraudScoreRequest.PrincipalComponentCount} PCA values (V1-V28).";
+                        return;
+                    }
+
+                    pcs = new float[FraudScoreRequest.PrincipalComponentCount];
+                    var n = parts.Length;
                     for (var i = 0; i < n; i++)
                     {
                         if (!float.TryParse(parts[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out pcs[i]))
                         {
-                            _error = $"Invalid number at position {i + 1} in V1–V28 list.";
+                            _error = $"Invalid number at position {i + 1} in V1-V28 list.";
                             return;
                         }
                     }
@@ -148,15 +109,11 @@
                 PrincipalComponents = pcs
             };
 
-            var response = await Http.PostAsJsonAsync("api/fraud/score", request).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                _error = $"API {(int)response.StatusCode}: {body}";
-                return;
-            }
-
-            _result = await response.Content.ReadFromJsonAsync<FraudScoreResponse>().ConfigureAwait(false);
+            _result = await FraudScoringApi.ScoreAsync(request).ConfigureAwait(false);
+        }
+        catch (FraudApiException ex)
+        {
+            _error = ex.Message;
         }
         catch (HttpRequestException ex)
         {

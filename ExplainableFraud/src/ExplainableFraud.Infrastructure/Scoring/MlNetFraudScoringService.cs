@@ -29,6 +29,7 @@ public sealed class MlNetFraudScoringService : IFraudScoringService
     private readonly MlPipelineOptions _options;
     private readonly Dictionary<string, float> _importanceByName;
     private readonly bool _useUniformImportance;
+    private readonly object _predictionLock = new();
 
     public MlNetFraudScoringService(IOptions<MlPipelineOptions> options, IHostEnvironment hostEnvironment)
     {
@@ -60,7 +61,12 @@ public sealed class MlNetFraudScoringService : IFraudScoringService
         cancellationToken.ThrowIfCancellationRequested();
 
         var input = FraudMlInputMapper.FromDomain(transaction);
-        var prediction = _engine.Predict(input);
+        FraudMlOutput prediction;
+        lock (_predictionLock)
+        {
+            prediction = _engine.Predict(input);
+        }
+
         var p = Math.Clamp(prediction.Probability, 0f, 1f);
         var threshold = _options.DecisionThreshold;
 
@@ -75,6 +81,8 @@ public sealed class MlNetFraudScoringService : IFraudScoringService
             FraudProbability = p,
             DecisionThreshold = threshold,
             IsFraudLikely = p >= threshold,
+            ExplanationMethod = ExplanationMethod.MetadataWeightedDeviation,
+            ExplanationSummary = "Approximate local emphasis combines global training importance with each feature's deviation from training statistics.",
             FeatureContributions = contributions,
             ModelVersion = modelVersion,
             ValidationMetrics = _metadata.Metrics
@@ -102,13 +110,30 @@ public sealed class MlNetFraudScoringService : IFraudScoringService
             scale = 1f;
 
         return raw
-            .Select(t => new FeatureContributionDto { FeatureName = FormatFeatureLabel(t.Name), Contribution = t.Value / scale })
+            .Select(t => new FeatureContributionDto
+            {
+                FeatureName = FormatFeatureLabel(t.Name),
+                Contribution = t.Value / scale,
+                Kind = GetFeatureKind(t.Name),
+                Description = FormatFeatureDescription(t.Name)
+            })
             .OrderByDescending(x => Math.Abs(x.Contribution))
             .ToList();
     }
 
     private static string FormatFeatureLabel(string name) =>
         name is "Time" or "Amount" ? name : $"PCA {name}";
+
+    private static FeatureContributionKind GetFeatureKind(string name) =>
+        name is "Time" or "Amount" ? FeatureContributionKind.Scalar : FeatureContributionKind.PrincipalComponent;
+
+    private static string FormatFeatureDescription(string name) =>
+        name switch
+        {
+            "Time" => "Seconds elapsed in the Kaggle transaction window.",
+            "Amount" => "Transaction amount as provided to the model.",
+            _ => "An anonymized principal component from the public credit-card fraud dataset."
+        };
 
     private static float GetFeature(FraudMlInput input, string name)
     {

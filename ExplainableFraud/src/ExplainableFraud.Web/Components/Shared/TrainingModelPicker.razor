@@ -1,0 +1,48 @@
+<label class="form-label" for="trainingModel">ML.NET trainer</label>
+<select class="form-select"
+        id="trainingModel"
+        value="@(((int)SelectedFamily).ToString(System.Globalization.NumberFormatInfo.InvariantInfo))"
+        @onchange="OnChangedAsync">
+
+    <option value="@((int)TrainingModelFamily.LogisticRegressionBaseline)"
+            title="Linear baseline — min-max normalize + LBFGS logistic regression. Extremely fast baseline.">
+        Logistic regression (LBFGS) — linear baseline
+    </option>
+    <option value="@((int)TrainingModelFamily.FastTreeGradientBoost)"
+            title="Nonlinear boosted trees tuned for skewed positives (UnbalancedSets).">
+        FastTree — gradient boosted trees (matches CLI spirit)
+    </option>
+    <option value="@((int)TrainingModelFamily.FastForestEnsemble)"
+            title="Random forest ensemble without gradient boosting semantics.">
+        FastForest — bagged tree ensemble
+    </option>
+    <option disabled
+            class="fst-italic"
+            value="@((int)TrainingModelFamily.NeuralNetworkExperimentalPlaceholder)"
+            title="ML.NET Core does not include first-class differentiable tabular networks — needs Torch/ONNX/Python.">
+        Neural/tabular experimental (disabled — ONNX/Torch/Python only)
+    </option>
+</select>
+
+<div class="form-text text-muted mt-1">@Subtitle</div>
+
+@code {
+    [Parameter]
+    public TrainingModelFamily SelectedFamily { get; set; } = TrainingModelFamily.LogisticRegressionBaseline;
+
+    [Parameter]
+    public EventCallback<TrainingModelFamily> SelectedFamilyChanged { get; set; }
+
+    [Parameter]
+    public string Subtitle { get; set; } = string.Empty;
+
+    private Task OnChangedAsync(ChangeEventArgs args)
+    {
+        var raw = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(raw) || !int.TryParse(raw, out var numeric))
+            return Task.CompletedTask;
+
+        var family = (TrainingModelFamily)numeric;
+        return SelectedFamilyChanged.InvokeAsync(family);
+    }
+}

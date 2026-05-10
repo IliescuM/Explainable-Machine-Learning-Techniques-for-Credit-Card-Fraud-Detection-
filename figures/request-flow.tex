@@ -1,0 +1,28 @@
+% TikZ figure: Blazor UI -> HTTP -> API -> application service -> scoring -> DTO response.
+% Wrapped with \resizebox{\linewidth}{!}{...} at the call site for safe width fit.
+\begin{tikzpicture}[
+  font=\small,
+  >=Latex,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=5pt,
+              minimum width=3.4cm, minimum height=1.05cm},
+  arrow/.style={->, thick}
+]
+  \node[box, fill=blue!8] (ui) {Blazor UI\\\textit{(Interactive Server)}};
+  \node[box, fill=blue!8, right=1.1cm of ui] (http)
+    {\texttt{HttpClient}\\\texttt{POST}\\\texttt{api/fraud/}\texttt{score}};
+  \node[box, fill=orange!10, right=1.1cm of http] (api)
+    {ASP.NET Core\\\textit{FraudController}};
+  \node[box, fill=green!8, below=1.2cm of api] (app)
+    {\texttt{IFraud-}\\\texttt{ScoringService}\\\textit{Application}};
+  \node[box, fill=violet!8, right=1.1cm of app] (infra)
+    {ML.NET or\\heuristic engine};
+  \node[box, fill=gray!12, below=0.9cm of app] (dto)
+    {\texttt{FraudScore-}\\\texttt{Response}\\JSON to UI};
+
+  \draw[arrow] (ui) -- node[above, sloped, font=\scriptsize] {configured \texttt{ApiBaseUrl}} (http);
+  \draw[arrow] (http) -- (api);
+  \draw[arrow] (api) -- node[left, font=\scriptsize, xshift=-2pt] {map DTO $\rightarrow$ domain} (app);
+  \draw[arrow] (app) -- node[above, font=\scriptsize] {predict + explain} (infra);
+  \draw[arrow] (infra) |- (dto);
+  \draw[arrow] (dto) -| (ui);
+\end{tikzpicture}

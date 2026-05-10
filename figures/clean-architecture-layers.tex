@@ -1,0 +1,33 @@
+% Layer alignment of the ExplainableFraud solution (conceptual).
+% Designed to fit \linewidth with \resizebox in the host document, but kept
+% reasonably compact so the rendered figure stays legible.
+\begin{tikzpicture}[
+  font=\small,
+  layer/.style={draw, rounded corners=3pt, text width=10.5cm,
+                minimum height=0.95cm, align=left, inner xsep=8pt, inner ysep=4pt},
+  side/.style={draw, dashed, rounded corners=3pt, text width=4.6cm,
+               align=center, inner xsep=6pt, inner ysep=4pt, fill=gray!6},
+  >=Latex
+]
+  \node[layer, fill=red!6] (web)
+    {\textbf{Presentation} --- \texttt{ExplainableFraud.Web}\\
+     (Blazor, \texttt{IFraudScoringApi}, shared Razor components)};
+  \node[layer, fill=yellow!15, below=0.30cm of web] (api)
+    {\textbf{HTTP API} --- \texttt{ExplainableFraud.Api}\\
+     (controllers, serialisation, CORS to the Blazor origin)};
+  \node[layer, fill=green!7, below=0.30cm of api] (contracts)
+    {\textbf{Contracts + domain types} --- \texttt{ExplainableFraud.Contracts}
+     (JSON DTOs), \texttt{ExplainableFraud.Domain} (\texttt{TransactionFeatures})};
+  \node[layer, fill=cyan!8, below=0.30cm of contracts] (app)
+    {\textbf{Application} --- \texttt{ExplainableFraud.Application}
+     (\texttt{IFraudScoringService}, \texttt{TransactionMapper})};
+  \node[layer, fill=blue!10, below=0.30cm of app] (infra)
+    {\textbf{Infrastructure} --- \texttt{ExplainableFraud.Infrastructure}
+     (\texttt{MlNetFraudScoringService}, \texttt{HeuristicFraudScoringService},
+      model path options)};
+
+  \node[side, right=0.6cm of contracts] (training)
+    {\scriptsize Training CLI\\\texttt{ExplainableFraud.Training}\\
+     (writes model zip + metadata)};
+  \draw[->, thick] (contracts.east) -- (training.west);
+\end{tikzpicture}

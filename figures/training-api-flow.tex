@@ -1,0 +1,28 @@
+% TikZ figure: Blazor /training polls training REST surface; API runs in-process jobs.
+% Call site wraps with \resizebox{\linewidth}{!}{...} for safe widths.
+\begin{tikzpicture}[
+  font=\scriptsize,
+  >=Latex,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=4pt,
+              minimum width=2.8cm, minimum height=0.95cm},
+  arrow/.style={->, thick}
+]
+  \node[box, fill=blue!8] (ui) {\texttt{/training}\\Blazor\\\textit{(poll)}};
+  \node[box, fill=blue!8, right=0.75cm of ui] (routes)
+    {\texttt{GET} \texttt{/api/training/}\allowbreak\texttt{datasets}\\[2pt]\texttt{POST} \texttt{/api/training/jobs}\\[2pt]\texttt{GET} \texttt{/jobs/jobId}};
+  \node[box, fill=orange!10, right=0.75cm of routes] (ctl)
+    {\texttt{Training-}\\[-1pt]\texttt{Controller}};
+  \node[box, fill=green!8, below=1.0cm of ctl] (svc)
+    {\texttt{ITraining-}\\[-1pt]\texttt{JobService}};
+  \node[box, fill=violet!8, below=0.95cm of svc] (ml)
+    {ML.NET Fit/\\\textit{Evaluate}};
+  \node[box, fill=gray!12, left=1.85cm of ml] (dto)
+    {\texttt{Training-}\\[-1pt]\texttt{JobDto}\\metrics JSON};
+
+  \draw[arrow] (ui) -- node[above, font=\tiny] {\texttt{ApiBaseUrl}} (routes);
+  \draw[arrow] (routes) -- (ctl);
+  \draw[arrow] (ctl) -- node[left, font=\tiny, xshift=-1pt] {start / poll}(svc);
+  \draw[arrow] (svc) -- node[left, font=\tiny, xshift=-1pt]{Fit / Evaluate}(ml);
+  \draw[arrow] (svc) |- (dto);
+  \draw[arrow] (dto) |- (ui);
+\end{tikzpicture}

@@ -1,4 +1,5 @@
 using ExplainableFraud.Web.Components;
+using ExplainableFraud.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,8 @@ builder.Services.AddScoped(_ => new HttpClient
 {
     BaseAddress = new Uri(apiBase.EndsWith('/') ? apiBase : apiBase + "/")
 });
+builder.Services.AddScoped<IFraudScoringApi, FraudScoringApi>();
+builder.Services.AddScoped<ITrainingApi, TrainingApi>();
 
 var app = builder.Build();
 

@@ -33,6 +33,8 @@ public sealed class HeuristicFraudScoringService(IOptions<MlPipelineOptions> opt
             FraudProbability = p,
             DecisionThreshold = threshold,
             IsFraudLikely = p >= threshold,
+            ExplanationMethod = ExplanationMethod.HeuristicWeights,
+            ExplanationSummary = "Deterministic baseline: relative emphasis is derived from fixed feature weights and normalized for comparison.",
             FeatureContributions = contributions,
             ModelVersion = string.IsNullOrWhiteSpace(_options.ModelPath)
                 ? _options.ModelVersionLabel
@@ -46,9 +48,9 @@ public sealed class HeuristicFraudScoringService(IOptions<MlPipelineOptions> opt
     {
         var raw = new[]
         {
-            ("Amount (log-scaled contribution)", 2.8f * amountNorm),
-            ("Time (normalized contribution)", 1.6f * timeNorm),
-            ("PCA aggregate magnitude proxy", 0.05f * pcEnergy)
+            ("Amount", 2.8f * amountNorm, FeatureContributionKind.Scalar, "Log-scaled transaction amount in the baseline risk formula."),
+            ("Time", 1.6f * timeNorm, FeatureContributionKind.Scalar, "Kaggle Time column normalized to days in the baseline risk formula."),
+            ("PCA aggregate magnitude", 0.05f * pcEnergy, FeatureContributionKind.PrincipalComponentAggregate, "Aggregate absolute magnitude across V1-V28 used as a coarse PCA signal.")
         };
 
         var scale = raw.Max(x => Math.Abs(x.Item2));
@@ -56,7 +58,13 @@ public sealed class HeuristicFraudScoringService(IOptions<MlPipelineOptions> opt
             scale = 1f;
 
         return raw
-            .Select(x => new FeatureContributionDto { FeatureName = x.Item1, Contribution = x.Item2 / scale })
+            .Select(x => new FeatureContributionDto
+            {
+                FeatureName = x.Item1,
+                Contribution = x.Item2 / scale,
+                Kind = x.Item3,
+                Description = x.Item4
+            })
             .OrderByDescending(x => Math.Abs(x.Contribution))
             .ToList();
     }

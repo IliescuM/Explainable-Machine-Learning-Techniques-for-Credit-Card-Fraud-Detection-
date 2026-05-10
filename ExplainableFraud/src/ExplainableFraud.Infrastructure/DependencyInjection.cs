@@ -1,6 +1,7 @@
 using ExplainableFraud.Application.Abstractions;
 using ExplainableFraud.Infrastructure.Options;
 using ExplainableFraud.Infrastructure.Scoring;
+using ExplainableFraud.Infrastructure.Training;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,6 +14,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MlPipelineOptions>(configuration.GetSection(MlPipelineOptions.SectionName));
+        services.Configure<SimulatedTrainingJobOptions>(configuration.GetSection(SimulatedTrainingJobOptions.SectionName));
+        services.AddSingleton<ITrainingJobService, SimulatedTrainingJobService>();
 
         services.AddSingleton<IFraudScoringService>(sp =>
         {

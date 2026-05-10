@@ -58,6 +58,36 @@ h1:focus {
     border-color: #929292;
 }
 
+.risk-summary-card {
+    border-left: 0.35rem solid transparent;
+}
+
+.risk-summary-card-high {
+    border-left-color: #dc3545;
+}
+
+.risk-summary-card-low {
+    border-left-color: #198754;
+}
+
+.explanation-row {
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.explanation-row:hover {
+    box-shadow: 0 0.25rem 1rem rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.explanation-progress {
+    height: 0.55rem;
+    background-color: #eef2f7;
+}
+
+.explanation-progress .progress-bar {
+    background: linear-gradient(90deg, #0d6efd, #6610f2);
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
     color: var(--bs-secondary-color);
     text-align: end;

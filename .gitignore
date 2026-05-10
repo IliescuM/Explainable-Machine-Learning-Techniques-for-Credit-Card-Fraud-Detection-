@@ -27,6 +27,9 @@
 *.toc
 *.xdv
 
+# Node (Playwright screenshot helper at repo root)
+/node_modules/
+
 # OS
 Thumbs.db
 Desktop.ini

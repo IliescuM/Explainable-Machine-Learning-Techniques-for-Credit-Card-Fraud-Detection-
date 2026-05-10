@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using ExplainableFraud.Contracts.Fraud;
 using ExplainableFraud.Infrastructure.Ml;
 using Microsoft.ML;
+using Microsoft.ML.Data;
 using Microsoft.ML.Trainers.FastTree;
 
 var slotNames = new[]
@@ -82,22 +84,43 @@ var pipeline = ml.Transforms.Concatenate("Features",
     .Append(trainer);
 
 Console.WriteLine("Training...");
+var swTrain = Stopwatch.StartNew();
 var model = pipeline.Fit(split.TrainSet);
+swTrain.Stop();
 
 Console.WriteLine("Evaluating...");
 var predictions = model.Transform(split.TestSet);
-var metrics = ml.BinaryClassification.Evaluate(predictions, labelColumnName: nameof(FraudTrainingRow.Label));
+var metrics = ml.BinaryClassification.EvaluateNonCalibrated(predictions, labelColumnName: nameof(FraudTrainingRow.Label));
+ExtractConfusionCounts(metrics, out var tn, out var fp, out var fn, out var tp);
 
 var trainEnum = ml.Data.CreateEnumerable<FraudTrainingRow>(split.TrainSet, reuseRowObject: false).ToList();
+var testRows = (int)(split.TestSet.GetRowCount() ?? 0L);
 var metadata = new FraudModelMetadata
 {
     ModelVersionLabel = "fasttree-kaggle-creditcard-v1",
     Metrics = new ModelValidationMetricsDto
     {
         AreaUnderRocCurve = metrics.AreaUnderRocCurve,
+        AreaUnderPrecisionRecallCurve = metrics.AreaUnderPrecisionRecallCurve,
         F1Score = metrics.F1Score,
+        Precision = metrics.PositivePrecision,
+        Recall = metrics.PositiveRecall,
+        Accuracy = metrics.Accuracy,
+        PositivePrecision = metrics.PositivePrecision,
+        PositiveRecall = metrics.PositiveRecall,
+        NegativePrecision = metrics.NegativePrecision,
+        NegativeRecall = metrics.NegativeRecall,
         TrainRows = trainEnum.Count,
-        TestRows = (int)(split.TestSet.GetRowCount() ?? 0L)
+        ValidationRows = 0,
+        TestRows = testRows,
+        FeatureCount = 30,
+        TrueNegatives = tn,
+        FalsePositives = fp,
+        FalseNegatives = fn,
+        TruePositives = tp,
+        TrainerFamilyLabel =
+            "FastTree (CLI, leaves=56, trees=100, shrinkage=0.15, UnbalancedSets) · single 80/20 split",
+        FittingDurationMilliseconds = swTrain.ElapsedMilliseconds
     }
 };
 
@@ -110,9 +133,36 @@ ml.Model.Save(model, split.TrainSet.Schema, modelZip);
 var jsonOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 await File.WriteAllTextAsync(metaJson, JsonSerializer.Serialize(metadata, jsonOptions));
 
-Console.WriteLine($"AUC: {metrics.AreaUnderRocCurve:F4}, F1: {metrics.F1Score:F4}");
+Console.WriteLine(
+    $"AUC ROC: {metrics.AreaUnderRocCurve:F4}, PR-AUC: {metrics.AreaUnderPrecisionRecallCurve:F4}, F1: {metrics.F1Score:F4}, Accuracy: {metrics.Accuracy:F4}");
 Console.WriteLine($"Saved model: {modelZip}");
 Console.WriteLine($"Saved metadata: {metaJson}");
+
+static void ExtractConfusionCounts(
+    BinaryClassificationMetrics scored,
+    out long tn,
+    out long fp,
+    out long fn,
+    out long tp)
+{
+    tn = fp = fn = tp = 0;
+    try
+    {
+        var confusion = scored.ConfusionMatrix;
+        if (confusion is null || confusion.NumberOfClasses < 2)
+            return;
+
+        // GetCountForClassPair(predictedLabel, actualLabel); bool KeyValue order aligns indices with (0,0) as fraud-vs-fraud.
+        tp = (long)confusion.GetCountForClassPair(0, 0);
+        fn = (long)confusion.GetCountForClassPair(1, 0);
+        fp = (long)confusion.GetCountForClassPair(0, 1);
+        tn = (long)confusion.GetCountForClassPair(1, 1);
+    }
+    catch
+    {
+        // Fallback to zeros if confusion surface shifts slightly between ML.NET versions.
+    }
+}
 
 static List<FraudTrainingRow> LoadRows(string path, int? maxRows)
 {

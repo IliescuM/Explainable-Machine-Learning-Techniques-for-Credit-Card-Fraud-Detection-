@@ -1,0 +1,23 @@
+<div class="card mt-3 border-info shadow-sm">
+    <div class="card-body">
+        <h3 class="h6 card-title text-info">Validation hold-out</h3>
+        <p class="small text-muted">
+            These metrics come from the training metadata and describe model evaluation, not the individual transaction.
+        </p>
+        <dl class="row mb-0 small">
+            <dt class="col-sm-4">ROC AUC</dt>
+            <dd class="col-sm-8">@Metrics.AreaUnderRocCurve.ToString("F4")</dd>
+            <dt class="col-sm-4">PR-AUC</dt>
+            <dd class="col-sm-8">@Metrics.AreaUnderPrecisionRecallCurve.ToString("F4")</dd>
+            <dt class="col-sm-4">F1</dt>
+            <dd class="col-sm-8">@Metrics.F1Score.ToString("F4")</dd>
+            <dt class="col-sm-4">Train / validation / test rows</dt>
+            <dd class="col-sm-8">@Metrics.TrainRows / @Metrics.ValidationRows / @Metrics.TestRows</dd>
+        </dl>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required ModelValidationMetricsDto Metrics { get; set; }
+}

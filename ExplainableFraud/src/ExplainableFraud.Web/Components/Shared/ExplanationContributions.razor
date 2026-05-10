@@ -1,0 +1,70 @@
+<section class="mt-4" aria-labelledby="explanation-heading">
+    <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start">
+        <div>
+            <h3 id="explanation-heading" class="h6 mb-1">Why this score?</h3>
+            <p class="small text-muted mb-0">@Summary</p>
+        </div>
+        <span class="badge rounded-pill text-bg-light border">@FormatMethod(Method)</span>
+    </div>
+
+    <div class="alert alert-warning small mt-3 mb-3" role="note">
+        These values show relative model emphasis. They are not causal proof and should be reviewed with transaction context.
+    </div>
+
+    <div class="explanation-list">
+        @foreach (var contribution in TopContributions)
+        {
+            var width = Math.Clamp(Math.Abs(contribution.Contribution) * 100f, 0f, 100f);
+            <article class="explanation-row rounded-3 border bg-white p-3 mb-2">
+                <div class="d-flex justify-content-between gap-3">
+                    <div>
+                        <div class="fw-semibold">@contribution.FeatureName</div>
+                        <div class="small text-muted">@DescriptionFor(contribution)</div>
+                    </div>
+                    <span class="small fw-semibold">@contribution.Contribution.ToString("N3")</span>
+                </div>
+                <div class="progress explanation-progress mt-2" role="img" aria-label="@($"{contribution.FeatureName} relative emphasis {width:N0}%")">
+                    <div class="progress-bar" style="@($"width:{width.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%")"></div>
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<FeatureContributionDto> Contributions { get; set; } = [];
+
+    [Parameter]
+    public ExplanationMethod Method { get; set; } = ExplanationMethod.Unknown;
+
+    [Parameter]
+    public string Summary { get; set; } = "";
+
+    private IEnumerable<FeatureContributionDto> TopContributions =>
+        Contributions
+            .OrderByDescending(x => Math.Abs(x.Contribution))
+            .Take(8);
+
+    private static string DescriptionFor(FeatureContributionDto contribution)
+    {
+        if (!string.IsNullOrWhiteSpace(contribution.Description))
+            return contribution.Description;
+
+        return contribution.Kind switch
+        {
+            FeatureContributionKind.Scalar => "Human-readable scalar feature.",
+            FeatureContributionKind.PrincipalComponent => "Anonymized PCA feature from V1-V28.",
+            FeatureContributionKind.PrincipalComponentAggregate => "Aggregate signal across PCA features.",
+            _ => "Feature contribution returned by the scoring API."
+        };
+    }
+
+    private static string FormatMethod(ExplanationMethod method) =>
+        method switch
+        {
+            ExplanationMethod.HeuristicWeights => "Heuristic",
+            ExplanationMethod.MetadataWeightedDeviation => "Model metadata",
+            _ => "Unknown method"
+        };
+}

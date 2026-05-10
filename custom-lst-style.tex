@@ -45,3 +45,30 @@
 }
 
 \lstset{escapechar=@,style=customc}
+
+% Minimal C\# highlighting for API/client snippets (thesis excerpts).
+\lstdefinelanguage{CSharp}{
+  morekeywords={abstract,as,async,await,base,bool,break,byte,case,catch,char,checked,class,const,continue,decimal,default,delegate,do,double,else,enum,event,explicit,extern,false,finally,fixed,float,for,foreach,goto,if,implicit,in,int,interface,internal,is,lock,long,namespace,new,null,object,operator,out,override,params,private,protected,public,readonly,record,ref,required,return,sbyte,sealed,short,sizeof,stackalloc,static,string,struct,switch,this,throw,true,try,typeof,uint,ulong,unchecked,unsafe,ushort,using,var,virtual,void,volatile,while,init,get,set},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]"
+}
+\lstdefinestyle{csharpsnippet}{
+  language=CSharp,
+  backgroundcolor=\color{code},
+  breaklines=true,
+  breakatwhitespace=false,
+  breakindent=0pt,
+  breakautoindent=true,
+  postbreak=\mbox{{\color{gray}\tiny$\hookrightarrow$}\space},
+  basicstyle=\scriptsize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  stringstyle=\color{orange},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=0pt,
+  xrightmargin=0pt,
+}

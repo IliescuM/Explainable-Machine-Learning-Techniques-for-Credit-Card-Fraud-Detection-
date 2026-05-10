@@ -1,3 +1,4 @@
+\PassOptionsToPackage{hyphens}{url}
 \documentclass[a4paper,12pt,oneside]{report}
 \usepackage{OvidiusFMI}
 
@@ -11,9 +12,14 @@
 \usepackage{enumerate}
 \usepackage{listings}
 \usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,url,array}
+\usepackage{microtype}
 \usepackage{multicol,multirow}
 \usepackage{tabularx,booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
 \input{custom-lst-style}
+
+\setlength{\emergencystretch}{3em}
 
 \renewcommand{\tablename}{Table}
 \renewcommand{\figurename}{Figure}
@@ -44,8 +50,12 @@
 \include{motivatie}
 \include{staredomeniu}
 \include{solutiepropusa}
+\include{implementare}
 \include{prezentareaplicatie}
 \include{concluzii}
+
+\appendix
+\include{anexa}
 
 \bibliographystyle{unsrt}
 \setlength{\baselineskip}{\normalbaselineskip}

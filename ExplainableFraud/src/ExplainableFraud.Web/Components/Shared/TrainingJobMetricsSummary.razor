@@ -1,0 +1,106 @@
+@using ExplainableFraud.Contracts.Fraud
+
+<div class="card mt-4 border-secondary shadow-sm">
+    <div class="card-body">
+        <h3 class="h6 card-title">Hold-out evaluation</h3>
+        <p class="small text-muted mb-3">
+            @FooterNote
+        </p>
+
+        <dl class="row mb-3 small">
+            <dt class="col-sm-4">ROC-AUC</dt>
+            <dd class="col-sm-8">@Metrics.AreaUnderRocCurve.ToString("F4")</dd>
+            <dt class="col-sm-4">PR-AUC (average precision curve)</dt>
+            <dd class="col-sm-8">@Metrics.AreaUnderPrecisionRecallCurve.ToString("F4")</dd>
+            <dt class="col-sm-4">Precision @PrimaryLabelPrecision</dt>
+            <dd class="col-sm-8">@Metrics.PositivePrecision.ToString("F4")</dd>
+            <dt class="col-sm-4">Recall @PrimaryLabelRecall</dt>
+            <dd class="col-sm-8">@Metrics.PositiveRecall.ToString("F4")</dd>
+            <dt class="col-sm-4">F1 score</dt>
+            <dd class="col-sm-8">@Metrics.F1Score.ToString("F4")</dd>
+            <dt class="col-sm-4">Accuracy</dt>
+            <dd class="col-sm-8">@Metrics.Accuracy.ToString("F4")</dd>
+            <dt class="col-sm-4">Rows · features</dt>
+            <dd class="col-sm-8">train=@Metrics.TrainRows · validation=@Metrics.ValidationRows · test=@Metrics.TestRows · features=@Metrics.FeatureCount</dd>
+            <dt class="col-sm-4">Fit-only wall time</dt>
+            <dd class="col-sm-8">
+                @(Metrics.FittingDurationMilliseconds > 0 ? $"{Metrics.FittingDurationMilliseconds} ms · ML.NET Fit + transform overhead" :
+                    DurationMsFallback > 0 ? $"{DurationMsFallback} ms (job elapsed)" :
+                    "(not surfaced)")
+                @IterationsNote
+            </dd>
+            <dt class="col-sm-4">Trainer instrumentation</dt>
+            <dd class="col-sm-8">@(!string.IsNullOrWhiteSpace(Metrics.TrainerFamilyLabel) ? Metrics.TrainerFamilyLabel : "(not labelled)")</dd>
+        </dl>
+
+        @{
+            long cellTotal = Metrics.TrueNegatives + Metrics.FalsePositives + Metrics.FalseNegatives + Metrics.TruePositives;
+        }
+        @if (cellTotal > 0)
+        {
+            <div class="fw-semibold small mb-2">Confusion counts (positive class @PrimaryClassName)</div>
+            <table class="table table-sm table-bordered small mb-0">
+                <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col">Predicted non-fraud</th>
+                    <th scope="col">Predicted fraud</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th scope="row">Actual non-fraud</th>
+                    <td>@Metrics.TrueNegatives</td>
+                    <td>@Metrics.FalsePositives</td>
+                </tr>
+                <tr>
+                    <th scope="row">Actual fraud</th>
+                    <td>@Metrics.FalseNegatives</td>
+                    <td>@Metrics.TruePositives</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="form-text mt-2">TN / FP over legitimate rows; FN / TP over labelled fraud positives.</div>
+        }
+        else if (UsesRealMlNet && Metrics.TestRows == 0)
+        {
+            <div class="text-muted small">Confusion totals not serialised yet for this artifact — extend training export if needed.</div>
+        }
+        else if (!UsesRealMlNet && Metrics.TestRows == 0)
+        {
+            <div class="text-muted small">Hold-out folds were skipped in timeline-only simulations.</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required ModelValidationMetricsDto Metrics { get; set; }
+
+    /// <summary>Approximate analogue to gradient-boost iterations (trees) when surfaces.</summary>
+    [Parameter]
+    public int? TrainingIterationsReported { get; set; }
+
+    [Parameter]
+    public long DurationMsFallback { get; set; }
+
+    [Parameter]
+    public bool UsesRealMlNet { get; set; }
+
+    [Parameter]
+    public bool UsesSyntheticRows { get; set; }
+
+    [Parameter]
+    public string FooterNote { get; set; } =
+        "Metrics below come from BinaryClassification.Evaluate on the withheld test fraction for each job execution.";
+
+    private string PrimaryClassName => UsesSyntheticRows ? "synthetic imbalance" : "rare positives";
+
+    private string PrimaryLabelPrecision => $"(minority / @{PrimaryClassName})";
+
+    private string PrimaryLabelRecall => $"(coverage @{PrimaryClassName})";
+
+    private string IterationsNote => TrainingIterationsReported is > 0
+        ? $" · Tree ensembles report {TrainingIterationsReported} constituent trees trained."
+        : "";
+}

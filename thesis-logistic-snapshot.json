@@ -1,0 +1,103 @@
+﻿{
+    "jobId":  "bfecb5c0-1851-4318-adfe-9780968551b4",
+    "datasetKind":  2,
+    "modelFamily":  1,
+    "status":  2,
+    "phase":  4,
+    "usesSyntheticRows":  false,
+    "usedInProcessMlTrainer":  true,
+    "dataSourceKind":  2,
+    "dataSourceSummary":  "Observational CSV (offline) · creditcard.csv · 284,807 rows in memory — creditcard.csv: parsed 284,807 valid data rows.",
+    "labelDistribution":  {
+                              "afterLoad":  {
+                                                "negatives":  284315,
+                                                "positives":  492
+                                            },
+                              "train":  {
+                                            "negatives":  199020,
+                                            "positives":  344
+                                        },
+                              "validation":  {
+                                                 "negatives":  42647,
+                                                 "positives":  73
+                                             },
+                              "test":  {
+                                           "negatives":  42648,
+                                           "positives":  75
+                                       }
+                          },
+    "trainingIterationsReported":  null,
+    "durationMilliseconds":  2152,
+    "progressPercent":  100,
+    "message":  "ML.NET training finished — metrics are computed on withheld test rows (not scripted constants).",
+    "createdAt":  "2026-05-10T19:31:48.6300892+00:00",
+    "completedAt":  "2026-05-10T19:31:50.7822353+00:00",
+    "stages":  [
+                   {
+                       "id":  "validate",
+                       "title":  "Dataset validation",
+                       "status":  2,
+                       "detail":  "Observational CSV (offline) · creditcard.csv · 284,807 rows in memory — creditcard.csv: parsed 284,807 valid data rows."
+                   },
+                   {
+                       "id":  "split",
+                       "title":  "Stratified train / validation / test split",
+                       "status":  2,
+                       "detail":  "After load → positive=492, negative=284,315. Stratified partitions → Train: positive=344, negative=199,020; Validation: positive=73, negative=42,647; Test: positive=75, negative=42,648 (reference ULB cardinality ≈ 284,807)."
+                   },
+                   {
+                       "id":  "preprocess",
+                       "title":  "Preprocessing pipeline",
+                       "status":  2,
+                       "detail":  "Concatenate + NormalizeMinMax for LBFGS logistic regression baseline."
+                   },
+                   {
+                       "id":  "imbalance",
+                       "title":  "Class imbalance safeguards",
+                       "status":  2,
+                       "detail":  "Class priors encoded in tree hyperparameters; logistic baseline relies on calibrated evaluation on rare positives."
+                   },
+                   {
+                       "id":  "fit",
+                       "title":  "Model fitting",
+                       "status":  2,
+                       "detail":  "LbfgsLogisticRegression (quasi-Newton IRLS, min-max normalized features) finished in 114 ms (ML.NET Fit + transform)."
+                   },
+                   {
+                       "id":  "evaluate",
+                       "title":  "Evaluation \u0026 calibration",
+                       "status":  2,
+                       "detail":  "ROC-AUC=0.9792, PR-AUC=0.7755, Precision=0.9130, Recall=0.5600, F1=0.6942."
+                   },
+                   {
+                       "id":  "artifact",
+                       "title":  "Artifact publication plan",
+                       "status":  2,
+                       "detail":  "Demo path keeps models in memory only. Promote to disk via ExplainableFraud.Training --data creditcard.csv for production artifacts."
+                   }
+               ],
+    "metrics":  {
+                    "areaUnderRocCurve":  0.9791646345276058,
+                    "f1Score":  0.6942148760330579,
+                    "trainRows":  199364,
+                    "validationRows":  42720,
+                    "testRows":  42723,
+                    "featureCount":  30,
+                    "precision":  0.9130434782608695,
+                    "recall":  0.56,
+                    "areaUnderPrecisionRecallCurve":  0.7754811131385415,
+                    "accuracy":  0.9991339559487864,
+                    "positivePrecision":  0.9130434782608695,
+                    "positiveRecall":  0.56,
+                    "negativePrecision":  0.9992267497715397,
+                    "negativeRecall":  0.9999062089664228,
+                    "trueNegatives":  42644,
+                    "falsePositives":  4,
+                    "falseNegatives":  33,
+                    "truePositives":  42,
+                    "trainerFamilyLabel":  "LbfgsLogisticRegression (quasi-Newton IRLS, min-max normalized features) · Selected=logistic regression (LBFGS)",
+                    "fittingDurationMilliseconds":  114
+                },
+    "isSimulated":  false,
+    "errorDetail":  null
+}

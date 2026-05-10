@@ -11,6 +11,7 @@ public sealed class FraudController(IFraudScoringService scoringService) : Contr
 {
     [HttpPost("score")]
     [ProducesResponseType(typeof(FraudScoreResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FraudScoreResponse>> ScoreAsync(
         [FromBody] FraudScoreRequest request,
         CancellationToken cancellationToken)
